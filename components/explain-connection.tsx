@@ -39,6 +39,12 @@ export function ExplainConnection({
   const [targetVersionId, setTargetVersionId] = useState("");
   const [state, setState] = useState<ExplainState>({ status: "idle" });
   const activeRequest = useRef<AbortController | null>(null);
+  const hasUserEditedTarget = useRef(false);
+
+  const suggestions = Array.from(
+    new Set(targetSuggestions.map((item) => item.dependencyVersionId)),
+  );
+  const firstSuggestion = suggestions[0] ?? "";
 
   useEffect(
     () => () => {
@@ -46,6 +52,17 @@ export function ExplainConnection({
     },
     [],
   );
+
+  // Direct dependencies arrive after this component mounts. Seed the field with
+  // the first one so the form is runnable without typing an exact Version ID,
+  // but never overwrite a target the user has already touched.
+  useEffect(() => {
+    if (hasUserEditedTarget.current || firstSuggestion === "") {
+      return;
+    }
+
+    setTargetVersionId(firstSuggestion);
+  }, [firstSuggestion]);
 
   async function explainConnection(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -98,10 +115,6 @@ export function ExplainConnection({
     }
   }
 
-  const suggestions = Array.from(
-    new Set(targetSuggestions.map((item) => item.dependencyVersionId)),
-  );
-
   return (
     <section
       aria-labelledby="explain-heading"
@@ -147,6 +160,7 @@ export function ExplainConnection({
             id="target-version"
             list="target-version-suggestions"
             onChange={(event) => {
+              hasUserEditedTarget.current = true;
               setTargetVersionId(event.target.value);
               setState({ status: "idle" });
             }}
@@ -171,8 +185,16 @@ export function ExplainConnection({
       <div className="mt-5">
         {state.status === "idle" && (
           <MessageCard
-            message="Choose a suggested dependency or enter any exact indexed Version ID."
-            title="No target selected"
+            message={
+              targetVersionId.trim() === ""
+                ? "Choose a suggested dependency or enter any exact indexed Version ID."
+                : "Run Explain connection to trace the shortest directed path, or replace the target with any other exact indexed Version ID."
+            }
+            title={
+              targetVersionId.trim() === ""
+                ? "No target selected"
+                : "Ready to explain"
+            }
           />
         )}
         {state.status === "loading" && (

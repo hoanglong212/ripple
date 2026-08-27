@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type {
   DownstreamImpact,
+  IndexedVersion,
   PackageDetail,
   VersionDetail,
 } from "@/lib/domain/packages";
@@ -244,24 +245,28 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
   }
 
   const packageDetail = packageState.response.data.package;
+  const versionCount = packageDetail.versions.length;
 
   return (
     <div className="space-y-8">
       <section className="surface-grid overflow-hidden rounded-[2rem] border border-slate-200">
         <div className="grid lg:grid-cols-[1fr_21rem]">
           <div className="bg-slate-950 p-7 text-white sm:p-10">
-            <div className="flex items-center gap-3">
-              <span className="rounded-full bg-cyan-400 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-cyan-950">
-                Package
+            <span className="rounded-full bg-cyan-400 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-cyan-950">
+              Package
+            </span>
+            <div className="mt-7 flex flex-wrap items-baseline gap-x-4 gap-y-3">
+              <h1 className="break-all font-mono text-3xl font-semibold tracking-[-0.035em] sm:text-5xl">
+                {packageDetail.name}
+              </h1>
+              <span className="shrink-0 rounded-full border border-white/15 px-3 py-1 text-xs font-semibold text-slate-300">
+                {versionCount} indexed version{versionCount === 1 ? "" : "s"}
               </span>
-              <span className="text-sm text-slate-400">Identity layer</span>
             </div>
-            <h1 className="mt-7 break-all font-mono text-3xl font-semibold tracking-[-0.035em] sm:text-5xl">
-              {packageDetail.name}
-            </h1>
             <p className="mt-4 max-w-xl text-sm leading-6 text-slate-400">
-              Package identity anchors search. Dependency truth belongs to the
-              exact indexed version selected beside it.
+              {versionCount > 1
+                ? `Ripple indexes ${versionCount} releases of this package. Each release resolves its own dependency set — switch between them to compare.`
+                : "Ripple indexes one release of this package. Everything below is dependency truth for that exact version."}
             </p>
             {selectedVersionId !== "" && (
               <div className="mt-8 inline-flex max-w-full items-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2">
@@ -282,31 +287,12 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
                 Only versions present in Ripple are available.
               </p>
             </div>
-            {packageDetail.versions.length > 0 ? (
-              <div className="mt-8">
-                <label
-                  className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
-                  htmlFor="indexed-version"
-                >
-                  Exact version
-                </label>
-                <select
-                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3.5 font-mono text-sm font-semibold text-slate-950 outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-100"
-                  id="indexed-version"
-                  onChange={(event) => setSelectedVersionId(event.target.value)}
-                  value={selectedVersionId}
-                >
-                  {packageDetail.versions.map((version) => (
-                    <option key={version.id} value={version.id}>
-                      {version.version}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-3 text-xs text-slate-500">
-                  {packageDetail.versions.length} indexed version
-                  {packageDetail.versions.length === 1 ? "" : "s"}
-                </p>
-              </div>
+            {versionCount > 0 ? (
+              <VersionSelector
+                onSelect={setSelectedVersionId}
+                selectedVersionId={selectedVersionId}
+                versions={packageDetail.versions}
+              />
             ) : (
               <p className="mt-8 text-sm font-semibold text-slate-700">
                 No indexed versions
@@ -453,6 +439,86 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
               : []
           }
         />
+      )}
+    </div>
+  );
+}
+
+// Beyond this many indexed versions the pills stop being scannable and a
+// native select is the better control.
+const SEGMENTED_SELECTOR_LIMIT = 6;
+
+function VersionSelector({
+  onSelect,
+  selectedVersionId,
+  versions,
+}: {
+  onSelect: (versionId: string) => void;
+  selectedVersionId: string;
+  versions: IndexedVersion[];
+}) {
+  if (versions.length > SEGMENTED_SELECTOR_LIMIT) {
+    return (
+      <div className="mt-8">
+        <label
+          className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
+          htmlFor="indexed-version"
+        >
+          Exact version
+        </label>
+        <select
+          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3.5 font-mono text-sm font-semibold text-slate-950 outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-100"
+          id="indexed-version"
+          onChange={(event) => onSelect(event.target.value)}
+          value={selectedVersionId}
+        >
+          {versions.map((version) => (
+            <option key={version.id} value={version.id}>
+              {version.version}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-8">
+      <p
+        className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
+        id="version-selector-label"
+      >
+        Exact version
+      </p>
+      <div
+        aria-labelledby="version-selector-label"
+        className="flex flex-wrap gap-2"
+        role="group"
+      >
+        {versions.map((version) => {
+          const isSelected = version.id === selectedVersionId;
+
+          return (
+            <button
+              aria-pressed={isSelected}
+              className={`rounded-xl border px-4 py-3 font-mono text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 ${
+                isSelected
+                  ? "border-slate-950 bg-slate-950 text-white"
+                  : "border-slate-300 bg-white text-slate-700 hover:border-slate-950"
+              }`}
+              key={version.id}
+              onClick={() => onSelect(version.id)}
+              type="button"
+            >
+              {version.version}
+            </button>
+          );
+        })}
+      </div>
+      {versions.length > 1 && (
+        <p className="mt-3 text-xs leading-5 text-slate-500">
+          Switch releases to compare dependency truth.
+        </p>
       )}
     </div>
   );
