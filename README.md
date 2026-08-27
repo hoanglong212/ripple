@@ -268,16 +268,22 @@ npm run build
 npm run graph:verify
 ```
 
-`npm run test` runs 22 tests across three suites: exact-version service semantics, deps.dev
-root-origin extraction and bundled-node filtering, and HTTP error mapping.
+`npm run test` runs 30 tests across four suites: exact-version service semantics, deps.dev
+root-origin extraction and bundled-node filtering, HTTP error mapping, and Neo4j record
+mapping.
 
 Because two independent sources now back the catalog, the search path is tested for every
 combination of them failing — graph only, catalog only, both, and neither — so a dead npm
 registry degrades to graph results and a dead CognoDB degrades to catalog results rather than
 failing the request.
 
-Repository record mapping and route handlers are not covered by unit tests; `graph:verify`
-exercises them against the live database instead.
+Record mapping is the gnarliest code in the app — hand-unwrapping Neo4j `Node` and
+`Relationship` properties, telling "not indexed" apart from "indexed with no results", and
+deciding which driver faults mean the database is unavailable. A fake driver exercises all of
+it without a database, including session cleanup when mapping throws.
+
+Route handlers are still not covered by unit tests; `graph:verify` exercises them against the
+live database instead.
 
 ## Scope
 

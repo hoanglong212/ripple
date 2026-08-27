@@ -215,7 +215,7 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
       <div className="space-y-6" role="status">
         <div className="flex items-center gap-3 text-sm font-semibold text-mist-500">
           <span className="size-2 bg-signal" />
-          Loading package identity and indexed versions…
+          Loading package guide and graph coverage…
         </div>
         <div className="h-64 border border-[var(--hairline)] bg-ink-850" />
         <div className="h-80 border border-[var(--hairline)] bg-ink-850" />

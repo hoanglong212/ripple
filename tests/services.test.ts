@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import neo4j, { type Driver, type Record as Neo4jRecord } from "neo4j-driver";
 import { z } from "zod";
 import { explainPathEnvelope } from "@/app/api/versions/[...versionId]/route";
 import type {
@@ -12,6 +13,7 @@ import type {
   VersionDetail,
 } from "@/lib/domain/packages";
 import { errorResponse } from "@/lib/http/responses";
+import { Neo4jGraphRepository } from "@/lib/repositories/graph-repository";
 import type {
   NpmRegistry,
   RegistryPackageDetail,
@@ -578,5 +580,203 @@ describe("HTTP error mapping", () => {
     } finally {
       console.error = originalConsoleError;
     }
+  });
+});
+
+/*
+ * Repository-layer coverage.
+ *
+ * This is where Neo4j values are converted into plain DTOs, and it is the
+ * gnarliest code in the app: hand-unwrapping Node and Relationship properties,
+ * distinguishing "not indexed" from "indexed with no results", and deciding
+ * which driver failures mean the database is unavailable. A fake driver lets
+ * all of that be exercised without a database.
+ */
+function fakeRecord(fields: Record<string, unknown>): Neo4jRecord {
+  return { get: (key: string) => fields[key] } as unknown as Neo4jRecord;
+}
+
+function fakeDriver(
+  records: Neo4jRecord[] | (() => never),
+): { closes: number; driver: Driver } {
+  const state = { closes: 0 };
+  const driver = {
+    session: () => ({
+      executeRead: async (work: (tx: unknown) => unknown) =>
+        work({
+          run: () => {
+            if (typeof records === "function") {
+              records();
+            }
+            return { records };
+          },
+        }),
+      close: async () => {
+        state.closes += 1;
+      },
+    }),
+  } as unknown as Driver;
+
+  return {
+    get closes() {
+      return state.closes;
+    },
+    driver,
+  };
+}
+
+const PATH_NODE = (id: string) => ({ properties: { id } });
+const PATH_REL = (requirement: string) => ({ properties: { requirement } });
+
+describe("Neo4j record mapping", () => {
+  it("unwraps path nodes and relationships into plain values", async () => {
+    const { driver } = fakeDriver([
+      fakeRecord({
+        pathNodes: [PATH_NODE("ajv@8.20.0"), PATH_NODE("fast-uri@3.1.6")],
+        pathRelationships: [PATH_REL("^3.0.1")],
+      }),
+    ]);
+
+    const result = await new Neo4jGraphRepository(driver)
+      .findShortestDependencyPath("ajv@8.20.0", "fast-uri@3.1.6", 5);
+
+    assert.deepEqual(result, {
+      requirements: ["^3.0.1"],
+      versionIds: ["ajv@8.20.0", "fast-uri@3.1.6"],
+    });
+  });
+
+  it("returns no path when both endpoints exist but nothing connects them", async () => {
+    // shortestPath() yields one row of nulls rather than zero rows, and that
+    // is a successful empty result, not a missing resource.
+    const { driver } = fakeDriver([
+      fakeRecord({ pathNodes: null, pathRelationships: null }),
+    ]);
+
+    const result = await new Neo4jGraphRepository(driver)
+      .findShortestDependencyPath("a@1.0.0", "b@1.0.0", 5);
+
+    assert.equal(result, null);
+  });
+
+  it("rejects a path whose requirements do not line up with its nodes", async () => {
+    const { driver } = fakeDriver([
+      fakeRecord({
+        pathNodes: [PATH_NODE("a@1.0.0"), PATH_NODE("b@1.0.0")],
+        pathRelationships: [PATH_REL("^1.0.0"), PATH_REL("^2.0.0")],
+      }),
+    ]);
+
+    await assert.rejects(
+      new Neo4jGraphRepository(driver)
+        .findShortestDependencyPath("a@1.0.0", "b@1.0.0", 5),
+      /inconsistent dependency path/,
+    );
+  });
+
+  it("distinguishes an unindexed impact target from one with no dependents", async () => {
+    const missing = fakeDriver([]);
+    assert.equal(
+      await new Neo4jGraphRepository(missing.driver)
+        .findDownstreamImpact("nope@1.0.0", 4),
+      null,
+      "zero rows means the target Version is not indexed",
+    );
+
+    const noDependents = fakeDriver([
+      fakeRecord({
+        affectedVersionId: null,
+        hopCount: null,
+        pathVersionIds: null,
+        targetVersionId: "leaf@1.0.0",
+      }),
+    ]);
+    assert.deepEqual(
+      await new Neo4jGraphRepository(noDependents.driver)
+        .findDownstreamImpact("leaf@1.0.0", 4),
+      [],
+      "a row of nulls means the target exists with nothing pointing at it",
+    );
+  });
+
+  it("converts Neo4j integer hop counts to plain numbers", async () => {
+    const { driver } = fakeDriver([
+      fakeRecord({
+        affectedVersionId: "webpack@5.109.2",
+        hopCount: neo4j.int(2),
+        pathVersionIds: ["webpack@5.109.2", "schema-utils@4.3.3", "ajv@8.20.0"],
+      }),
+    ]);
+
+    const result = await new Neo4jGraphRepository(driver)
+      .findDownstreamImpact("ajv@8.20.0", 4);
+
+    assert.equal(result?.[0].hopCount, 2);
+    assert.equal(typeof result?.[0].hopCount, "number");
+  });
+
+  it("skips malformed dependency rows rather than emitting partial edges", async () => {
+    const { driver } = fakeDriver([
+      fakeRecord({
+        dependencyPackageName: "fast-uri",
+        dependencyVersionId: "fast-uri@3.1.6",
+        id: "ajv@8.20.0",
+        packageName: "ajv",
+        requirement: "^3.0.1",
+        version: "8.20.0",
+      }),
+      fakeRecord({
+        dependencyPackageName: "broken",
+        dependencyVersionId: null,
+        id: "ajv@8.20.0",
+        packageName: "ajv",
+        requirement: "^1.0.0",
+        version: "8.20.0",
+      }),
+    ]);
+
+    const result = await new Neo4jGraphRepository(driver).findVersion("ajv@8.20.0");
+
+    assert.equal(result?.dependencies.length, 1);
+    assert.equal(result?.dependencies[0].dependencyVersionId, "fast-uri@3.1.6");
+  });
+
+  it("closes the session even when mapping throws", async () => {
+    const handle = fakeDriver([
+      fakeRecord({ pathNodes: "not-an-array", pathRelationships: [] }),
+    ]);
+
+    await assert.rejects(
+      new Neo4jGraphRepository(handle.driver)
+        .findShortestDependencyPath("a@1.0.0", "b@1.0.0", 5),
+      /invalid dependency path/,
+    );
+    assert.equal(handle.closes, 1);
+  });
+
+  it("reports an unreachable database as unavailable, and leaves other faults alone", async () => {
+    const unavailable = fakeDriver(() => {
+      throw new neo4j.Neo4jError(
+        "gone",
+        neo4j.error.SERVICE_UNAVAILABLE,
+        "50N42",
+        "service unavailable",
+      );
+    });
+    await assert.rejects(
+      new Neo4jGraphRepository(unavailable.driver).versionExists("a@1.0.0"),
+      (error) => error instanceof DatabaseUnavailableError,
+    );
+
+    const programmerError = fakeDriver(() => {
+      throw new Error("bad Cypher");
+    });
+    await assert.rejects(
+      new Neo4jGraphRepository(programmerError.driver).versionExists("a@1.0.0"),
+      (error) =>
+        error instanceof Error &&
+        !(error instanceof DatabaseUnavailableError) &&
+        error.message === "bad Cypher",
+    );
   });
 });
