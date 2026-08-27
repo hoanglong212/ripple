@@ -1,0 +1,39 @@
+{
+  "name": "ripple",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "tsx --test tests/services.test.ts",
+    "graph:spike": "tsx --env-file-if-exists=.env.local scripts/graph-spike.ts",
+    "graph:cleanup-spike": "tsx --env-file-if-exists=.env.local scripts/database/cleanup-spike.ts",
+    "graph:constraints": "tsx --env-file-if-exists=.env.local scripts/database/constraints.ts",
+    "graph:seed": "tsx --env-file-if-exists=.env.local scripts/database/seed.ts",
+    "graph:verify": "tsx --env-file-if-exists=.env.local scripts/database/verify.ts",
+    "snapshot:build": "tsx scripts/ingestion/build-snapshot.ts",
+    "snapshot:validate": "tsx scripts/ingestion/validate-snapshot.ts"
+  },
+  "dependencies": {
+    "neo4j-driver": "^6.2.0",
+    "next": "16.3.3",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "semver": "^7.8.5",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/semver": "^7.8.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.3",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.12",
+    "typescript": "^5"
+  }
+}
