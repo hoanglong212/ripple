@@ -6,163 +6,181 @@ import { VersionDivergenceProof } from "@/components/version-divergence-proof";
 
 const CAPABILITIES = [
   {
+    detail:
+      "Inspect the resolved outgoing edges and declared requirement for one version.",
     name: "Dependency Explorer",
     question: "What does this exact release depend on?",
-    detail: "Inspect the resolved outgoing edges and declared requirement for one version.",
   },
   {
+    detail:
+      "Trace direct and transitive dependents without mixing package releases.",
     name: "Downstream Impact",
     question: "Who is affected if this release changes?",
-    detail: "Trace direct and transitive dependents without mixing package releases.",
   },
   {
+    detail: "Follow the shortest dependency chain, requirement by requirement.",
     name: "Explain Path",
     question: "Why are these versions connected?",
-    detail: "Follow the shortest dependency chain, requirement by requirement.",
   },
 ] as const;
 
-function CapabilityIcon({ index }: { index: number }) {
+/*
+ * Each glyph depicts the actual shape of its traversal — fan-out, fan-in, and
+ * a chain. Monochrome on purpose: the accent marks the release under analysis.
+ */
+function CapabilityGlyph({ index }: { index: number }) {
+  const line = "var(--hairline-strong)";
+
   if (index === 0) {
     return (
-      <svg fill="none" height="28" viewBox="0 0 28 28" width="28">
-        <circle cx="7" cy="14" r="3" stroke="currentColor" strokeWidth="1.8" />
-        <circle cx="21" cy="7" r="3" stroke="currentColor" strokeWidth="1.8" />
-        <circle cx="21" cy="21" r="3" stroke="currentColor" strokeWidth="1.8" />
-        <path d="M10 13L18 8.5M10 15L18 19.5" stroke="currentColor" strokeWidth="1.8" />
+      <svg aria-hidden="true" fill="none" height="44" viewBox="0 0 64 44" width="64">
+        <path d="M18 22 L44 10M18 22 L44 22M18 22 L44 34" stroke={line} strokeWidth="1" />
+        <rect fill="var(--color-signal)" height="10" width="10" x="13" y="17" />
+        <rect height="7" stroke={line} width="7" x="44" y="6.5" />
+        <rect height="7" stroke={line} width="7" x="44" y="18.5" />
+        <rect height="7" stroke={line} width="7" x="44" y="30.5" />
       </svg>
     );
   }
 
   if (index === 1) {
     return (
-      <svg fill="none" height="28" viewBox="0 0 28 28" width="28">
-        <circle cx="21" cy="14" r="3" stroke="currentColor" strokeWidth="1.8" />
-        <circle cx="7" cy="7" r="3" stroke="currentColor" strokeWidth="1.8" />
-        <circle cx="7" cy="21" r="3" stroke="currentColor" strokeWidth="1.8" />
-        <path d="M10 8.5L18 13M10 19.5L18 15" stroke="currentColor" strokeWidth="1.8" />
+      <svg aria-hidden="true" fill="none" height="44" viewBox="0 0 64 44" width="64">
+        <path d="M20 10 L46 22M20 22 L46 22M20 34 L46 22" stroke={line} strokeWidth="1" />
+        <rect height="7" stroke={line} width="7" x="13" y="6.5" />
+        <rect height="7" stroke={line} width="7" x="13" y="18.5" />
+        <rect height="7" stroke={line} width="7" x="13" y="30.5" />
+        <rect fill="var(--color-signal)" height="10" width="10" x="46" y="17" />
       </svg>
     );
   }
 
   return (
-    <svg fill="none" height="28" viewBox="0 0 28 28" width="28">
-      <circle cx="6" cy="14" r="3" stroke="currentColor" strokeWidth="1.8" />
-      <circle cx="22" cy="14" r="3" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M9 14H19" stroke="currentColor" strokeDasharray="2 3" strokeWidth="1.8" />
-      <path d="M15.5 10.5L19 14L15.5 17.5" stroke="currentColor" strokeWidth="1.8" />
+    <svg aria-hidden="true" fill="none" height="44" viewBox="0 0 64 44" width="64">
+      <path d="M18 22 H26M33 22 H40M47 22 H51" stroke={line} strokeWidth="1" />
+      <rect fill="var(--color-signal)" height="10" width="10" x="8" y="17" />
+      <rect height="7" stroke={line} width="7" x="26" y="18.5" />
+      <rect height="7" stroke={line} width="7" x="40" y="18.5" />
+      <path d="M51 18 L56 22 L51 26" stroke="var(--color-signal)" strokeWidth="1.2" />
     </svg>
   );
 }
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-[#f8f7ff]">
-      <header className="border-b border-violet-200/70 bg-[#f8f7ff]">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-5 sm:px-8 lg:px-12">
+    <main className="min-h-screen bg-ink-900">
+      <header className="sticky top-0 z-20 border-b border-[var(--hairline)] bg-ink-900/85 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-4 sm:px-8 lg:px-12">
           <Link
             aria-label="Ripple home"
-            className="flex items-center gap-3 text-lg font-semibold tracking-[-0.03em] text-[#191625]"
+            className="flex items-center gap-3 text-[0.95rem] font-semibold tracking-[-0.02em] text-mist-100"
             href="/"
           >
-            <span className="grid size-8 place-items-center bg-violet-600 font-mono text-xs text-white shadow-[0_8px_22px_-8px_rgba(124,58,237,0.85)]">
+            <span className="grid size-7 place-items-center bg-signal font-mono text-[0.7rem] font-bold text-ink-950">
               R/
             </span>
             Ripple
           </Link>
-          <p className="hidden items-center gap-2 text-xs font-medium text-violet-950/60 sm:flex">
-            <span className="size-1.5 rounded-full bg-emerald-500" />
-            Exact-version npm intelligence
+          <p className="hidden items-center gap-2 font-mono text-[0.7rem] text-mist-600 sm:flex">
+            <span className="size-1.5 bg-signal" />
+            exact-version npm intelligence
           </p>
         </div>
       </header>
 
-      <section className="border-b border-violet-200/70 bg-[#f8f7ff]">
-        <div className="mx-auto grid w-full max-w-7xl gap-14 px-5 py-20 sm:px-8 sm:py-28 lg:grid-cols-[1.12fr_0.88fr] lg:items-center lg:gap-20 lg:px-12 lg:py-32">
-          <div>
-            <h1 className="max-w-4xl text-balance text-5xl font-semibold leading-[0.98] tracking-[-0.04em] text-zinc-950 sm:text-7xl lg:text-[5.25rem]">
-              Understand what changes behind every{" "}
-              <span className="text-violet-600">package version.</span>
+      {/* Hero ------------------------------------------------------------ */}
+      <section className="border-b border-[var(--hairline)]">
+        <div className="mx-auto grid w-full max-w-7xl gap-14 px-5 py-20 sm:px-8 sm:py-24 lg:grid-cols-[1.06fr_0.94fr] lg:items-center lg:gap-16 lg:px-12 lg:py-28">
+          <div className="reveal-up">
+            <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-signal">
+              npm dependency impact
+            </p>
+            <div className="rule-signal mt-4 h-px w-24" />
+            <h1 className="mt-7 max-w-3xl text-balance text-[2.6rem] font-semibold leading-[1.02] tracking-[-0.04em] text-mist-100 sm:text-6xl lg:text-[4.1rem] lg:leading-[0.97]">
+              Understand what changes behind every package version.
             </h1>
-            <p className="mt-8 max-w-2xl text-lg leading-8 text-zinc-600 sm:text-xl">
+            <p className="mt-7 max-w-xl text-base leading-7 text-mist-500 sm:text-lg sm:leading-8">
               Ripple traces exact npm releases, their dependencies, and their
               impact — because a package name does not tell the whole story.
             </p>
-            <div className="mt-10 flex max-w-sm flex-col gap-3 sm:max-w-none sm:flex-row">
+
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row">
               <Link
-                className="inline-flex h-12 w-full items-center justify-center bg-violet-600 px-5 text-sm font-semibold text-white shadow-[0_12px_28px_-12px_rgba(124,58,237,0.9)] hover:bg-violet-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600 sm:w-44"
+                className="lift inline-flex h-12 items-center justify-center border border-signal bg-signal px-6 text-sm font-semibold text-ink-950 hover:bg-[var(--color-signal-deep)] sm:w-48"
                 href="/packages/ajv"
               >
-                Try AJV Example
+                Try the AJV example
               </Link>
               <Link
-                className="inline-flex h-12 w-full items-center justify-center border border-violet-300 bg-white px-5 text-sm font-semibold text-violet-950 hover:border-violet-600 hover:text-violet-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600 sm:w-44"
+                className="lift inline-flex h-12 items-center justify-center border border-[var(--hairline-strong)] px-6 text-sm font-semibold text-mist-300 hover:border-signal hover:text-signal sm:w-48"
                 href="#package-search"
               >
-                Search Packages
+                Search packages
               </Link>
             </div>
           </div>
 
-          <DependencyRippleVisual />
+          <div className="reveal-up" style={{ animationDelay: "120ms" }}>
+            <DependencyRippleVisual />
+          </div>
         </div>
       </section>
 
-      <section className="border-b border-violet-200/70 bg-white">
+      {/* The argument ---------------------------------------------------- */}
+      <section className="border-b border-[var(--hairline)]">
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 sm:py-28 lg:px-12">
           <VersionDivergenceProof />
         </div>
       </section>
 
-      <section className="border-b border-violet-200/70 bg-[#f1efff]" id="capabilities">
+      {/* Capabilities ---------------------------------------------------- */}
+      <section className="border-b border-[var(--hairline)]" id="capabilities">
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 sm:py-28 lg:px-12">
           <div className="max-w-2xl">
-            <h2 className="text-4xl font-semibold tracking-[-0.04em] text-zinc-950 sm:text-5xl">
+            <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-mist-600">
+              capabilities
+            </p>
+            <h2 className="mt-5 text-3xl font-semibold tracking-[-0.04em] text-mist-100 sm:text-[2.75rem] sm:leading-[1.06]">
               Three questions. One exact release at the center.
             </h2>
-            <p className="mt-5 text-base leading-7 text-violet-950/65">
+            <p className="mt-5 text-base leading-7 text-mist-500">
               Ripple keeps the direction of every edge visible, so each answer
               reads like a cause-and-effect story rather than a graph dump.
             </p>
           </div>
-          <div className="mt-14 overflow-hidden border border-violet-200 bg-white shadow-[0_24px_60px_-44px_rgba(76,29,149,0.55)]">
+
+          <div className="mt-14 border-t border-[var(--hairline)]">
             {CAPABILITIES.map((capability, index) => (
               <article
-                className="group grid gap-5 border-b border-violet-100 p-6 last:border-b-0 sm:grid-cols-[4.5rem_0.75fr_1.05fr_1fr] sm:items-center sm:gap-8 sm:p-8"
+                className="group grid gap-6 border-b border-[var(--hairline)] py-8 transition-colors hover:bg-ink-850 sm:grid-cols-[5rem_1fr] sm:gap-10 sm:px-2 lg:grid-cols-[5rem_13rem_1fr_18rem] lg:items-center"
                 key={capability.name}
               >
-                <div
-                  aria-hidden="true"
-                  className={`grid size-14 place-items-center rounded-2xl ${
-                    index === 0
-                      ? "bg-cyan-100 text-cyan-700"
-                      : index === 1
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-violet-100 text-violet-700"
-                  }`}
-                >
-                  <CapabilityIcon index={index} />
+                <div className="text-mist-600 transition-colors group-hover:text-mist-300">
+                  <CapabilityGlyph index={index} />
                 </div>
-                <h3 className="font-mono text-sm font-semibold text-violet-700">
+                <p className="font-mono text-xs uppercase tracking-[0.14em] text-signal">
                   {capability.name}
-                </h3>
-                <p className="text-xl font-semibold tracking-[-0.02em] text-zinc-950">
-                  {capability.question}
                 </p>
-                <p className="text-sm leading-6 text-violet-950/65">{capability.detail}</p>
+                <h3 className="text-xl font-semibold tracking-[-0.025em] text-mist-100 sm:text-2xl">
+                  {capability.question}
+                </h3>
+                <p className="text-sm leading-6 text-mist-500">
+                  {capability.detail}
+                </p>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="border-b border-violet-950 bg-[#17132c] text-white" id="package-search">
-        <div className="mx-auto grid w-full max-w-7xl gap-12 px-5 py-20 sm:px-8 sm:py-24 lg:grid-cols-[0.7fr_1.3fr] lg:items-start lg:gap-20 lg:px-12">
+      {/* Search ---------------------------------------------------------- */}
+      <section className="border-b border-[var(--hairline)] bg-ink-950" id="package-search">
+        <div className="mx-auto grid w-full max-w-7xl gap-12 px-5 py-20 sm:px-8 sm:py-24 lg:grid-cols-[0.72fr_1.28fr] lg:items-start lg:gap-20 lg:px-12">
           <div>
-            <h2 className="text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
+            <h2 className="text-3xl font-semibold tracking-[-0.04em] text-mist-100 sm:text-[2.5rem] sm:leading-[1.08]">
               Start with a package. Inspect one release.
             </h2>
-            <p className="mt-5 max-w-md text-base leading-7 text-zinc-400">
+            <p className="mt-5 max-w-md text-base leading-7 text-mist-500">
               Package search finds the identity. Ripple begins dependency
               analysis only after an exact indexed version is selected.
             </p>
@@ -171,16 +189,19 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="bg-[#f8f7ff]">
+      {/* Dataset --------------------------------------------------------- */}
+      <section>
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 sm:py-24 lg:px-12">
           <DatasetTransparency />
         </div>
       </section>
 
-      <footer className="border-t border-zinc-200 bg-white">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-5 py-7 text-sm text-zinc-500 sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-12">
-          <p className="font-semibold text-zinc-950">Ripple</p>
-          <p>Dependency answers for exact npm releases.</p>
+      <footer className="border-t border-[var(--hairline)]">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-5 py-8 text-sm text-mist-600 sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-12">
+          <p className="font-semibold text-mist-300">Ripple</p>
+          <p className="font-mono text-xs">
+            dependency answers for exact npm releases
+          </p>
         </div>
       </footer>
     </main>

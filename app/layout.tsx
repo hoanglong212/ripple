@@ -1,6 +1,19 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { Inter_Tight, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+
+const interTight = Inter_Tight({
+  display: "swap",
+  subsets: ["latin"],
+  variable: "--font-inter-tight",
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  display: "swap",
+  subsets: ["latin"],
+  variable: "--font-jetbrains-mono",
+});
 
 export const metadata: Metadata = {
   title: "Ripple — Exact-version npm dependency tracing",
@@ -10,14 +23,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className="h-full antialiased">
-      <body
-        className="min-h-full"
-        data-design-direction="dependency-signal"
-        data-design-style="expressive-developer-tool"
-      >
-        {children}
-      </body>
+    <html
+      className={`h-full antialiased ${interTight.variable} ${jetBrainsMono.variable}`}
+      lang="en"
+    >
+      <body className="min-h-full bg-ink-900 text-mist-100">{children}</body>
     </html>
   );
 }

@@ -213,12 +213,12 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
   if (packageState.status === "loading") {
     return (
       <div className="space-y-6" role="status">
-        <div className="flex items-center gap-3 text-sm font-semibold text-zinc-600">
-          <span className="size-2 rounded-full bg-blue-600" />
+        <div className="flex items-center gap-3 text-sm font-semibold text-mist-500">
+          <span className="size-2 bg-signal" />
           Loading package identity and indexed versions…
         </div>
-        <div className="h-64 border border-zinc-200 bg-white" />
-        <div className="h-80 border border-zinc-200 bg-white" />
+        <div className="h-64 border border-[var(--hairline)] bg-ink-850" />
+        <div className="h-80 border border-[var(--hairline)] bg-ink-850" />
       </div>
     );
   }
@@ -249,44 +249,44 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
 
   return (
     <div className="space-y-6">
-      <section className="overflow-hidden border border-violet-200 bg-white shadow-[0_24px_60px_-48px_rgba(76,29,149,0.5)]">
+      <section className="overflow-hidden border border-[var(--hairline)] bg-ink-850">
         <div className="grid lg:grid-cols-[1fr_22rem]">
           <div className="p-6 sm:p-9 lg:p-10">
-            <p className="text-sm font-medium text-violet-700">Package identity</p>
+            <p className="text-sm font-medium text-signal">Package identity</p>
             <div className="mt-5 flex flex-wrap items-baseline gap-x-4 gap-y-3">
-              <h1 className="break-all font-mono text-4xl font-semibold tracking-[-0.04em] text-zinc-950 sm:text-6xl">
+              <h1 className="break-all font-mono text-4xl font-semibold tracking-[-0.04em] text-mist-100 sm:text-6xl">
                 {packageDetail.name}
               </h1>
-              <span className="shrink-0 rounded-full bg-violet-100 px-3 py-1.5 text-xs font-semibold text-violet-800">
+              <span className="shrink-0 bg-signal/10 px-3 py-1.5 text-xs font-semibold text-signal">
                 {versionCount} indexed version{versionCount === 1 ? "" : "s"}
               </span>
             </div>
-            <div className="mt-8 max-w-2xl border-l border-violet-500 pl-5">
-              <h2 className="text-base font-semibold text-zinc-950">Why versions matter</h2>
-              <p className="mt-1 text-sm leading-6 text-zinc-600">
+            <div className="mt-8 max-w-2xl border-l border-signal pl-5">
+              <h2 className="text-base font-semibold text-mist-100">Why versions matter</h2>
+              <p className="mt-1 text-sm leading-6 text-mist-500">
                 Different releases can resolve different dependency trees.
               </p>
             </div>
-            <p className="mt-8 text-xs text-zinc-500">
+            <p className="mt-8 text-xs text-mist-600">
               {packageState.response.meta.scope}
             </p>
           </div>
 
-          <div className="flex flex-col justify-between border-t border-violet-200 bg-violet-50/70 p-6 sm:p-8 lg:border-l lg:border-t-0">
+          <div className="flex flex-col justify-between border-t border-[var(--hairline)] bg-ink-800 p-6 sm:p-8 lg:border-l lg:border-t-0">
             <div>
-              <p className="text-sm font-semibold text-zinc-950">Indexed version selector</p>
-              <p className="mt-2 text-sm leading-6 text-zinc-600">
+              <p className="text-sm font-semibold text-mist-100">Indexed version selector</p>
+              <p className="mt-2 text-sm leading-6 text-mist-500">
                 Choose the exact release Ripple should use for every answer below.
               </p>
               {selectedVersionId !== "" && (
-                <div className="mt-5 border border-violet-200 bg-white p-4">
+                <div className="mt-5 border border-[var(--hairline)] bg-ink-850 p-4">
                   <div className="flex items-center gap-3">
-                    <span className="grid size-8 shrink-0 place-items-center rounded-full bg-violet-600 text-xs font-bold text-white">
+                    <span className="grid size-8 shrink-0 place-items-center bg-signal text-xs font-bold text-ink-950">
                       V
                     </span>
                     <div className="min-w-0">
-                      <p className="text-[0.68rem] text-violet-700">All analysis starts from</p>
-                      <code className="mt-1 block truncate text-xs font-semibold text-zinc-950">
+                      <p className="text-[0.68rem] text-signal">All analysis starts from</p>
+                      <code className="mt-1 block truncate text-xs font-semibold text-mist-100">
                         {selectedVersionId}
                       </code>
                     </div>
@@ -301,7 +301,7 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
                 versions={packageDetail.versions}
               />
             ) : (
-              <p className="mt-8 text-sm font-semibold text-zinc-700">
+              <p className="mt-8 text-sm font-semibold text-mist-300">
                 No indexed versions
               </p>
             )}
@@ -315,7 +315,7 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
 
       <section
         aria-labelledby="dependencies-heading"
-        className="border border-cyan-200 bg-white p-6 shadow-[0_24px_60px_-50px_rgba(8,145,178,0.55)] sm:p-8 lg:p-10"
+        className="border border-[var(--hairline)] bg-ink-850 p-6 sm:p-8 lg:p-10"
       >
         <SectionHeader
           description="This release depends on:"
@@ -330,14 +330,14 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
         />
 
         {selectedVersionId !== "" && (
-          <div className="mt-7 flex flex-col gap-3 border-y border-cyan-200 bg-cyan-50/60 px-4 py-4 text-xs sm:flex-row sm:items-center sm:gap-4">
-            <code className="break-all font-semibold text-zinc-900">
+          <div className="mt-7 flex flex-col gap-3 border-y border-[var(--hairline)] bg-ink-800 px-4 py-4 text-xs sm:flex-row sm:items-center sm:gap-4">
+            <code className="break-all font-semibold text-mist-100">
               {selectedVersionId}
             </code>
-            <span className="shrink-0 font-mono font-semibold text-cyan-700">
+            <span className="shrink-0 font-mono font-semibold text-signal">
               DEPENDS_ON {"{ requirement }"} →
             </span>
-            <span className="font-mono text-zinc-500">exact Version</span>
+            <span className="font-mono text-mist-600">exact Version</span>
           </div>
         )}
 
@@ -373,20 +373,20 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
               title="No direct dependencies"
             />
           ) : (
-            <div className="result-reveal">
+            <div className="reveal-up">
               <DependencyEdgeExample
                 dependency={versionState.response.data.version.dependencies[0]}
                 sourceVersionId={selectedVersionId}
               />
               <div className="mt-8 flex items-center justify-between gap-4">
-                <h3 className="text-sm font-semibold text-zinc-950">
+                <h3 className="text-sm font-semibold text-mist-100">
                   All direct dependencies
                 </h3>
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-mist-600">
                   Resolved from this release
                 </p>
               </div>
-              <ul className="mt-3 divide-y divide-cyan-100 border-y border-cyan-100">
+              <ul className="mt-3 divide-y divide-[var(--hairline)] border-y border-[var(--hairline)]">
                 {versionState.response.data.version.dependencies.map(
                   (dependency) => (
                     <li
@@ -394,21 +394,21 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
                       key={`${dependency.dependencyVersionId}\0${dependency.requirement}`}
                     >
                       <div className="flex min-w-0 items-center gap-3">
-                        <span className="size-2 shrink-0 rounded-full bg-cyan-400" />
+                        <span className="size-2 shrink-0 bg-signal" />
                         <div className="min-w-0">
-                          <p className="truncate font-mono text-sm font-semibold text-zinc-950">
+                          <p className="truncate font-mono text-sm font-semibold text-mist-100">
                             {dependency.dependencyPackageName}
                           </p>
-                          <p className="mt-1 break-all font-mono text-xs text-zinc-500">
+                          <p className="mt-1 break-all font-mono text-xs text-mist-600">
                             {dependency.dependencyVersionId}
                           </p>
                         </div>
                       </div>
                       <div className="shrink-0 text-right">
-                        <span className="block text-xs text-zinc-500">
+                        <span className="block text-xs text-mist-600">
                           requires
                         </span>
-                        <code className="mt-1 block border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-800">
+                        <code className="mt-1 block border border-[var(--hairline-strong)] bg-signal/10 px-3 py-1.5 text-xs font-semibold text-signal">
                           {dependency.requirement}
                         </code>
                       </div>
@@ -422,7 +422,7 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
 
       <section
         aria-labelledby="impact-heading"
-        className="border border-emerald-200 bg-white p-6 shadow-[0_24px_60px_-50px_rgba(5,150,105,0.45)] sm:p-8 lg:p-10"
+        className="border border-[var(--hairline)] bg-ink-850 p-6 sm:p-8 lg:p-10"
       >
         <SectionHeader
           description="Who depends on this exact release?"
@@ -471,19 +471,19 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
 function AnalysisGuide({ selectedVersionId }: { selectedVersionId: string }) {
   const steps = [
     {
-      color: "bg-cyan-100 text-cyan-800",
+      color: "bg-signal/10 text-signal",
       description: "Outgoing arrows show what this release needs.",
       label: "Dependencies",
       path: "source → dependency",
     },
     {
-      color: "bg-emerald-100 text-emerald-800",
+      color: "bg-signal/10 text-signal",
       description: "Incoming paths show which releases could be affected.",
       label: "Impact",
       path: "affected version → source",
     },
     {
-      color: "bg-violet-100 text-violet-800",
+      color: "bg-signal/10 text-signal",
       description: "A chain explains every step between two releases.",
       label: "Explain Path",
       path: "source → … → target",
@@ -493,7 +493,7 @@ function AnalysisGuide({ selectedVersionId }: { selectedVersionId: string }) {
   return (
     <section
       aria-labelledby="analysis-guide-heading"
-      className="overflow-hidden border border-violet-200 bg-[#17132c] text-white shadow-[0_24px_60px_-46px_rgba(76,29,149,0.6)]"
+      className="overflow-hidden border border-[var(--hairline)] bg-ink-950 text-mist-100"
     >
       <div className="grid lg:grid-cols-[0.72fr_1.28fr]">
         <div className="p-6 sm:p-8">
@@ -503,25 +503,25 @@ function AnalysisGuide({ selectedVersionId }: { selectedVersionId: string }) {
           >
             How to read this page
           </h2>
-          <p className="mt-3 max-w-md text-sm leading-6 text-violet-100/70">
+          <p className="mt-3 max-w-md text-sm leading-6 text-mist-600">
             Every section keeps{" "}
-            <code className="font-semibold text-white">{selectedVersionId}</code>{" "}
+            <code className="font-semibold text-mist-100">{selectedVersionId}</code>{" "}
             at the center. The direction of the arrows changes the question.
           </p>
         </div>
-        <div className="grid border-t border-white/10 sm:grid-cols-3 lg:border-l lg:border-t-0">
+        <div className="grid border-t border-[var(--hairline)] sm:grid-cols-3 lg:border-l lg:border-t-0">
           {steps.map((step) => (
             <div
-              className="border-b border-white/10 p-5 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0"
+              className="border-b border-[var(--hairline)] p-5 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0"
               key={step.label}
             >
               <span className={`inline-flex rounded-full px-2.5 py-1 text-[0.68rem] font-semibold ${step.color}`}>
                 {step.label}
               </span>
-              <code className="mt-4 block text-[0.68rem] text-violet-200">
+              <code className="mt-4 block text-[0.68rem] text-mist-500">
                 {step.path}
               </code>
-              <p className="mt-2 text-xs leading-5 text-violet-100/65">
+              <p className="mt-2 text-xs leading-5 text-mist-500">
                 {step.description}
               </p>
             </div>
@@ -540,33 +540,33 @@ function DependencyEdgeExample({
   sourceVersionId: string;
 }) {
   return (
-    <div className="mt-6 overflow-hidden border border-cyan-200 bg-cyan-50/50">
-      <div className="border-b border-cyan-200 bg-white px-5 py-4">
-        <h3 className="font-semibold text-zinc-950">Worked example: read one edge</h3>
-        <p className="mt-1 text-sm leading-6 text-zinc-600">
+    <div className="mt-6 overflow-hidden border border-[var(--hairline)] bg-ink-800">
+      <div className="border-b border-[var(--hairline)] bg-ink-850 px-5 py-4">
+        <h3 className="font-semibold text-mist-100">Worked example: read one edge</h3>
+        <p className="mt-1 text-sm leading-6 text-mist-500">
           Ripple separates the declared requirement from the exact release it
           resolved to.
         </p>
       </div>
       <div className="grid gap-4 p-5 sm:grid-cols-[minmax(0,1fr)_10rem_minmax(0,1fr)] sm:items-center">
-        <div className="border border-violet-200 bg-white p-4">
-          <p className="text-xs font-medium text-violet-700">Source release</p>
-          <code className="mt-2 block break-all text-sm font-semibold text-zinc-950">
+        <div className="border border-[var(--hairline)] bg-ink-850 p-4">
+          <p className="text-xs font-medium text-signal">Source release</p>
+          <code className="mt-2 block break-all text-sm font-semibold text-mist-100">
             {sourceVersionId}
           </code>
         </div>
         <div className="relative flex flex-col items-center justify-center gap-2 py-2">
-          <code className="rounded-full bg-cyan-600 px-3 py-1 text-xs font-semibold text-white">
+          <code className="bg-signal px-3 py-1 text-xs font-semibold text-ink-950">
             requires {dependency.requirement}
           </code>
           <svg
             aria-hidden="true"
-            className="h-5 w-full text-cyan-500"
+            className="h-5 w-full text-signal"
             preserveAspectRatio="none"
             viewBox="0 0 160 20"
           >
             <path
-              className="dependency-edge-signal"
+              className="edge-flow"
               d="M2 10H150"
               fill="none"
               stroke="currentColor"
@@ -576,19 +576,19 @@ function DependencyEdgeExample({
             <path d="M145 5L151 10L145 15" fill="none" stroke="currentColor" strokeWidth="2" />
           </svg>
         </div>
-        <div className="border border-cyan-200 bg-white p-4">
-          <p className="text-xs font-medium text-cyan-700">Resolved exact dependency</p>
-          <code className="mt-2 block break-all text-sm font-semibold text-zinc-950">
+        <div className="border border-[var(--hairline)] bg-ink-850 p-4">
+          <p className="text-xs font-medium text-signal">Resolved exact dependency</p>
+          <code className="mt-2 block break-all text-sm font-semibold text-mist-100">
             {dependency.dependencyVersionId}
           </code>
         </div>
       </div>
-      <p className="border-t border-cyan-200 px-5 py-4 text-sm leading-6 text-zinc-700">
+      <p className="border-t border-[var(--hairline)] px-5 py-4 text-sm leading-6 text-mist-300">
         Read this as:{" "}
-        <code className="font-semibold text-violet-700">{sourceVersionId}</code>{" "}
-        declared <code className="font-semibold text-cyan-700">{dependency.requirement}</code>{" "}
+        <code className="font-semibold text-signal">{sourceVersionId}</code>{" "}
+        declared <code className="font-semibold text-signal">{dependency.requirement}</code>{" "}
         and resolved to{" "}
-        <code className="font-semibold text-cyan-700">{dependency.dependencyVersionId}</code>.
+        <code className="font-semibold text-signal">{dependency.dependencyVersionId}</code>.
       </p>
     </div>
   );
@@ -611,13 +611,13 @@ function VersionSelector({
     return (
       <div className="mt-8">
         <label
-          className="mb-2 block text-xs font-semibold text-zinc-600"
+          className="mb-2 block text-xs font-semibold text-mist-500"
           htmlFor="indexed-version"
         >
           Exact version
         </label>
         <select
-          className="w-full border border-violet-300 bg-white px-4 py-3.5 font-mono text-sm font-semibold text-zinc-950 outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+          className="w-full border border-[var(--hairline-strong)] bg-ink-850 px-4 py-3.5 font-mono text-sm font-semibold text-mist-100 outline-none focus:border-signal"
           id="indexed-version"
           onChange={(event) => onSelect(event.target.value)}
           value={selectedVersionId}
@@ -635,7 +635,7 @@ function VersionSelector({
   return (
     <div className="mt-8">
       <p
-        className="mb-2 text-xs font-semibold text-zinc-600"
+        className="mb-2 text-xs font-semibold text-mist-500"
         id="version-selector-label"
       >
         Exact version
@@ -651,10 +651,10 @@ function VersionSelector({
           return (
             <button
               aria-pressed={isSelected}
-              className={`border px-4 py-3 font-mono text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 ${
+              className={`border px-4 py-3 font-mono text-sm font-semibold focus:outline-none  ${
                 isSelected
-                  ? "border-violet-600 bg-violet-600 text-white shadow-[0_10px_24px_-12px_rgba(124,58,237,0.85)]"
-                  : "border-violet-200 bg-white text-zinc-700 hover:border-violet-500"
+                  ? "border-signal bg-signal text-ink-950"
+                  : "border-[var(--hairline)] bg-ink-850 text-mist-300 hover:border-signal"
               }`}
               key={version.id}
               onClick={() => onSelect(version.id)}
@@ -666,7 +666,7 @@ function VersionSelector({
         })}
       </div>
       {versions.length > 1 && (
-        <p className="mt-3 text-xs leading-5 text-zinc-500">
+        <p className="mt-3 text-xs leading-5 text-mist-600">
           Switch releases to compare dependency truth.
         </p>
       )}
@@ -693,49 +693,51 @@ function ImpactResults({ impact }: { impact: DownstreamImpact }) {
   const example = impact.affectedVersions[0];
 
   return (
-    <div className="result-reveal mt-7">
+    <div className="reveal-up mt-7">
       {example && (
-        <div className="mb-5 grid gap-4 border border-emerald-200 bg-emerald-50/60 p-5 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center">
+        <div className="mb-5 grid gap-4 border border-[var(--hairline)] bg-ink-800 p-5 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center">
           <div>
-            <p className="text-xs font-medium text-emerald-800">An affected release</p>
-            <code className="mt-2 block break-all text-sm font-semibold text-zinc-950">
+            <p className="text-xs font-medium text-signal">An affected release</p>
+            <code className="mt-2 block break-all text-sm font-semibold text-mist-100">
               {example.affectedVersionId}
             </code>
           </div>
-          <div className="flex items-center gap-2 text-emerald-600">
-            <span className="h-px flex-1 bg-emerald-300 sm:w-12" />
+          <div className="flex items-center gap-2 text-signal">
+            <span className="h-px flex-1 bg-[var(--hairline-strong)] sm:w-12" />
             <span className="text-xs font-semibold">
               can reach in {example.hopCount} {example.hopCount === 1 ? "hop" : "hops"}
             </span>
             <span aria-hidden="true">→</span>
           </div>
           <div className="sm:text-right">
-            <p className="text-xs font-medium text-violet-700">Selected release</p>
-            <code className="mt-2 block break-all text-sm font-semibold text-zinc-950">
+            <p className="text-xs font-medium text-signal">Selected release</p>
+            <code className="mt-2 block break-all text-sm font-semibold text-mist-100">
               {impact.targetVersionId}
             </code>
           </div>
-          <p className="text-sm leading-6 text-zinc-600 sm:col-span-3">
+          <p className="text-sm leading-6 text-mist-500 sm:col-span-3">
             If the selected release changes, versions that depend on it directly
             or through other dependencies may be affected. Ripple follows those
             incoming paths up to four hops.
           </p>
         </div>
       )}
-      <div className="grid gap-0 border border-emerald-200 lg:grid-cols-[0.72fr_1.28fr]">
-      <div className="bg-[#12372d] p-5 text-white sm:p-6">
-        <p className="text-2xl font-semibold tracking-tight">
-          {impact.totalReachable} {impact.totalReachable === 1 ? "version" : "versions"}{" "}
-          reachable
+      <div className="grid gap-0 border border-[var(--hairline)] lg:grid-cols-[0.72fr_1.28fr]">
+      <div className="bg-ink-800 p-5 text-mist-100 sm:p-6">
+        <p className="font-mono text-3xl font-semibold tracking-tight text-signal">
+          {impact.totalReachable}
         </p>
-        <p className="mt-2 text-sm text-zinc-400">
+        <p className="mt-1 text-sm text-mist-300">
+          {impact.totalReachable === 1 ? "version" : "versions"} reachable
+        </p>
+        <p className="mt-2 text-sm text-mist-600">
           Within Ripple&apos;s indexed npm snapshot.
         </p>
-        <dl className="mt-6 grid grid-cols-3 gap-3 border-t border-white/10 pt-5 lg:grid-cols-1">
+        <dl className="mt-6 grid grid-cols-3 gap-3 border-t border-[var(--hairline)] pt-5 lg:grid-cols-1">
           {metrics.map(([label, value]) => (
             <div className="lg:flex lg:items-center lg:justify-between" key={label}>
-              <dt className="text-xs leading-5 text-zinc-400">{label}</dt>
-              <dd className="mt-1 font-mono text-xl font-semibold text-white lg:mt-0">
+              <dt className="text-xs leading-5 text-mist-600">{label}</dt>
+              <dd className="mt-1 font-mono text-xl font-semibold text-mist-100 lg:mt-0">
                 {value}
               </dd>
             </div>
@@ -743,11 +745,11 @@ function ImpactResults({ impact }: { impact: DownstreamImpact }) {
         </dl>
       </div>
 
-      <div className="border-t border-emerald-200 p-5 sm:p-6 lg:border-l lg:border-t-0">
-        <h3 className="text-sm font-semibold text-zinc-950">
+      <div className="border-t border-[var(--hairline)] p-5 sm:p-6 lg:border-l lg:border-t-0">
+        <h3 className="text-sm font-semibold text-mist-100">
           Affected versions
         </h3>
-        <ul className="mt-3 divide-y divide-emerald-100">
+        <ul className="mt-3 divide-y divide-[var(--hairline)]">
           {impact.affectedVersions.map((version) => (
             <li
               className="flex items-start justify-between gap-5 py-3.5"
@@ -755,16 +757,16 @@ function ImpactResults({ impact }: { impact: DownstreamImpact }) {
               title={version.pathVersionIds.join(" → ")}
             >
               <div className="min-w-0">
-                <code className="break-all text-sm font-semibold text-zinc-950">
+                <code className="break-all text-sm font-semibold text-mist-100">
                   {version.affectedVersionId}
                 </code>
                 {version.pathVersionIds.length > 2 && (
-                  <p className="mt-1 line-clamp-1 font-mono text-[0.68rem] text-zinc-400">
+                  <p className="mt-1 line-clamp-1 font-mono text-[0.68rem] text-mist-600">
                     {version.pathVersionIds.join(" → ")}
                   </p>
                 )}
               </div>
-              <span className="shrink-0 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+              <span className="shrink-0 bg-signal/10 px-2.5 py-1 text-xs font-semibold text-signal">
                 {version.hopCount} {version.hopCount === 1 ? "hop" : "hops"}
               </span>
             </li>
@@ -794,23 +796,23 @@ function SectionHeader({
       <div>
         <p
           className={`text-sm font-medium ${
-            id === "dependencies-heading" ? "text-cyan-700" : "text-emerald-700"
+            id === "dependencies-heading" ? "text-signal" : "text-signal"
           }`}
         >
           {question}
         </p>
           <h2
-            className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-zinc-950"
+            className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-mist-100"
             id={id}
           >
             {title}
           </h2>
-          <p className="mt-2 max-w-2xl text-base leading-6 text-zinc-600">
+          <p className="mt-2 max-w-2xl text-base leading-6 text-mist-500">
             {description}
           </p>
       </div>
       {meta && (
-        <span className="w-fit border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-600">
+        <span className="w-fit border border-[var(--hairline)] px-3 py-1.5 text-xs font-semibold text-mist-500">
           {meta}
         </span>
       )}
@@ -821,12 +823,12 @@ function SectionHeader({
 function LoadingPanel({ label, rows }: { label: string; rows: number }) {
   return (
     <div className="mt-6 space-y-3" role="status">
-      <p className="flex items-center gap-2 text-sm font-medium text-zinc-600">
-        <span className="size-2 rounded-full bg-blue-600" />
+      <p className="flex items-center gap-2 text-sm font-medium text-mist-500">
+        <span className="size-2 bg-signal" />
         {label}
       </p>
       {Array.from({ length: rows }, (_, index) => (
-        <div className="h-20 bg-zinc-100" key={index} />
+        <div className="h-20 bg-ink-800" key={index} />
       ))}
     </div>
   );
@@ -847,24 +849,24 @@ function StatusCard({
     <div
       className={`mt-6 border px-6 py-6 ${
         tone === "error"
-          ? "border-rose-200 bg-rose-50"
-          : "border-zinc-200 bg-zinc-50"
+          ? "border-rose-200 bg-rose/[0.06]"
+          : "border-[var(--hairline)] bg-ink-800"
       }`}
     >
       <span
         className={`mb-4 grid size-9 place-items-center rounded-full font-mono text-sm font-semibold ${
           tone === "error"
-            ? "bg-rose-100 text-rose-700"
-            : "bg-white text-zinc-600"
+            ? "bg-rose-100 text-rose"
+            : "bg-ink-850 text-mist-500"
         }`}
       >
         {tone === "error" ? "!" : "—"}
       </span>
-      <p className="font-semibold text-zinc-950">{title}</p>
-      <p className="mt-1 text-sm leading-6 text-zinc-600">{message}</p>
+      <p className="font-semibold text-mist-100">{title}</p>
+      <p className="mt-1 text-sm leading-6 text-mist-500">{message}</p>
       {action && (
         <Link
-          className="mt-5 inline-block bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white"
+          className="mt-5 inline-block bg-ink-950 px-4 py-2.5 text-sm font-semibold text-mist-100"
           href="/"
         >
           Return to package search

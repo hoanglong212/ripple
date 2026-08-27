@@ -118,62 +118,62 @@ export function ExplainConnection({
   return (
     <section
       aria-labelledby="explain-heading"
-      className="border border-violet-200 bg-white p-6 shadow-[0_24px_60px_-50px_rgba(124,58,237,0.55)] sm:p-8 lg:p-10"
+      className="border border-[var(--hairline)] bg-ink-850 p-6 sm:p-8 lg:p-10"
     >
       <div>
-        <p className="text-sm font-medium text-violet-700">
+        <p className="text-sm font-medium text-signal">
           Why are these versions connected?
         </p>
         <h2
-          className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-zinc-950"
+          className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-mist-100"
           id="explain-heading"
         >
           Explain Path
         </h2>
-        <p className="mt-2 max-w-2xl text-base leading-6 text-zinc-600">
+        <p className="mt-2 max-w-2xl text-base leading-6 text-mist-500">
           Follow the shortest directed dependency chain from this release to
           another exact indexed version.
         </p>
       </div>
 
-      <div className="mt-7 grid gap-3 border border-violet-200 bg-violet-50/60 p-5 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-center">
+      <div className="mt-7 grid gap-3 border border-[var(--hairline)] bg-ink-800 p-5 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-center">
         <div>
-          <p className="text-xs font-medium text-violet-700">1 · Source</p>
-          <code className="mt-2 block truncate text-xs font-semibold text-zinc-950">
+          <p className="text-xs font-medium text-signal">1 · Source</p>
+          <code className="mt-2 block truncate text-xs font-semibold text-mist-100">
             {sourceVersionId}
           </code>
         </div>
-        <span aria-hidden="true" className="hidden text-violet-400 sm:block">→</span>
+        <span aria-hidden="true" className="hidden text-mist-600 sm:block">→</span>
         <div>
-          <p className="text-xs font-medium text-violet-700">2 · Ripple traces</p>
-          <p className="mt-2 text-xs text-zinc-600">Every release and requirement</p>
+          <p className="text-xs font-medium text-signal">2 · Ripple traces</p>
+          <p className="mt-2 text-xs text-mist-500">Every release and requirement</p>
         </div>
-        <span aria-hidden="true" className="hidden text-violet-400 sm:block">→</span>
+        <span aria-hidden="true" className="hidden text-mist-600 sm:block">→</span>
         <div>
-          <p className="text-xs font-medium text-violet-700">3 · Target</p>
-          <p className="mt-2 text-xs text-zinc-600">The exact version you choose</p>
+          <p className="text-xs font-medium text-signal">3 · Target</p>
+          <p className="mt-2 text-xs text-mist-500">The exact version you choose</p>
         </div>
       </div>
 
       <form
-        className="mt-5 grid gap-4 border border-violet-200 bg-[#17132c] p-5 text-white sm:grid-cols-[1fr_auto] sm:items-end sm:p-6"
+        className="mt-5 grid gap-4 border border-[var(--hairline)] bg-ink-950 p-5 text-mist-100 sm:grid-cols-[1fr_auto] sm:items-end sm:p-6"
         onSubmit={explainConnection}
       >
         <div>
-          <div className="mb-4 flex min-w-0 items-center gap-2 text-xs text-violet-200/70">
+          <div className="mb-4 flex min-w-0 items-center gap-2 text-xs text-mist-600">
             <span className="shrink-0 font-semibold">Source</span>
-            <code className="truncate border-l border-violet-400 bg-white/10 px-2 py-1 text-white">
+            <code className="truncate border-l border-signal bg-ink-800 px-2 py-1 text-mist-100">
               {sourceVersionId}
             </code>
           </div>
           <label
-            className="mb-2 block text-xs font-semibold text-violet-200"
+            className="mb-2 block text-xs font-semibold text-mist-500"
             htmlFor="target-version"
           >
             Target exact Version ID
           </label>
           <input
-            className="w-full border border-violet-300 bg-white px-4 py-3.5 font-mono text-sm text-zinc-950 outline-none placeholder:text-zinc-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
+            className="w-full border border-[var(--hairline-strong)] bg-ink-850 px-4 py-3.5 font-mono text-sm text-mist-100 outline-none placeholder:text-mist-600 focus:border-signal focus:ring-2 focus:ring-signal/30"
             id="target-version"
             list="target-version-suggestions"
             onChange={(event) => {
@@ -191,7 +191,7 @@ export function ExplainConnection({
           </datalist>
         </div>
         <button
-          className="bg-violet-500 px-5 py-3.5 text-sm font-semibold text-white hover:bg-violet-400 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/40"
+          className="border border-signal bg-signal px-5 py-3.5 text-sm font-semibold text-ink-950 transition-colors hover:bg-[var(--color-signal-deep)] disabled:cursor-not-allowed disabled:border-[var(--hairline)] disabled:bg-ink-800 disabled:text-mist-700"
           disabled={targetVersionId.trim() === "" || state.status === "loading"}
           type="submit"
         >
@@ -216,11 +216,11 @@ export function ExplainConnection({
         )}
         {state.status === "loading" && (
           <div className="space-y-3" role="status">
-            <p className="flex items-center gap-2 text-sm font-medium text-zinc-600">
-              <span className="size-2 rounded-full bg-blue-600" />
+            <p className="flex items-center gap-2 text-sm font-medium text-mist-500">
+              <span className="size-2 bg-signal" />
               Finding the shortest dependency path…
             </p>
-            <div className="h-48 bg-zinc-100" />
+            <div className="h-48 bg-ink-800" />
           </div>
         )}
         {(state.status === "missing" || state.status === "error") && (
@@ -249,15 +249,15 @@ export function ExplainConnection({
 
 function PathResult({ explanation }: { explanation: ExplainPath }) {
   return (
-    <div className="result-reveal border border-violet-200 bg-violet-50/40 p-5 sm:p-6">
-      <div className="flex items-center justify-between gap-4 border-b border-violet-200 pb-4">
+    <div className="reveal-up border border-[var(--hairline)] bg-ink-800/40 p-5 sm:p-6">
+      <div className="flex items-center justify-between gap-4 border-b border-[var(--hairline)] pb-4">
         <div>
-          <p className="font-semibold text-zinc-950">Shortest dependency path</p>
-          <p className="mt-1 text-xs text-zinc-500">
+          <p className="font-semibold text-mist-100">Shortest dependency path</p>
+          <p className="mt-1 text-xs text-mist-600">
             Within Ripple&apos;s indexed npm snapshot.
           </p>
         </div>
-        <p className="rounded-full bg-violet-600 px-3 py-1.5 font-mono text-xs font-semibold text-white">
+        <p className="bg-signal px-3 py-1.5 font-mono text-xs font-semibold text-mist-100">
           {explanation.hops} {explanation.hops === 1 ? "hop" : "hops"}
         </p>
       </div>
@@ -274,10 +274,10 @@ function PathResult({ explanation }: { explanation: ExplainPath }) {
                 <p
                   className={`text-xs font-semibold ${
                     isSource
-                      ? "text-violet-700"
+                      ? "text-signal"
                       : isTarget
-                        ? "text-orange-700"
-                        : "text-cyan-700"
+                        ? "text-amber"
+                        : "text-signal"
                   }`}
                 >
                   {isSource ? "Source" : isTarget ? "Target" : "Dependency"}
@@ -286,12 +286,12 @@ function PathResult({ explanation }: { explanation: ExplainPath }) {
                   className={`mt-1.5 border px-4 py-3 ${
                     isSource || isTarget
                       ? isSource
-                        ? "border-violet-300 bg-violet-50"
-                        : "border-orange-300 bg-orange-50"
-                      : "border-cyan-200 bg-cyan-50/70"
+                        ? "border-[var(--hairline-strong)] bg-ink-800"
+                        : "border-l-2 border-l-amber bg-amber/[0.05]"
+                      : "border-l-2 border-l-[var(--hairline-strong)] bg-ink-800"
                   }`}
                 >
-                  <code className="block break-all text-sm font-semibold text-zinc-950">
+                  <code className="block break-all text-sm font-semibold text-mist-100">
                     {versionId}
                   </code>
                 </div>
@@ -299,15 +299,15 @@ function PathResult({ explanation }: { explanation: ExplainPath }) {
               {relationship && (
                 <li
                   aria-label={`Requires ${relationship.requirement}`}
-                  className="my-2 flex items-center gap-3 pl-4 text-violet-400"
+                  className="my-2 flex items-center gap-3 pl-4 text-mist-600"
                 >
                   <span aria-hidden="true" className="text-lg leading-none">
                     ↓
                   </span>
-                  <span className="text-xs font-semibold text-zinc-500">
+                  <span className="text-xs font-semibold text-mist-600">
                     DEPENDS_ON
                   </span>
-                  <code className="border border-violet-200 bg-white px-2 py-1 text-xs font-semibold text-violet-900">
+                  <code className="border border-[var(--hairline)] bg-ink-850 px-2 py-1 text-xs font-semibold text-mist-100">
                     requirement {relationship.requirement}
                   </code>
                 </li>
@@ -317,7 +317,7 @@ function PathResult({ explanation }: { explanation: ExplainPath }) {
         })}
       </ol>
 
-      <p className="mt-6 border-t border-violet-200 pt-4 text-xs text-zinc-500">
+      <p className="mt-6 border-t border-[var(--hairline)] pt-4 text-xs text-mist-600">
         Each connector is one directed DEPENDS_ON relationship declared by the
         version above it. {explanation.datasetQualifier}
       </p>
@@ -327,12 +327,12 @@ function PathResult({ explanation }: { explanation: ExplainPath }) {
 
 function MessageCard({ title, message }: { title: string; message: string }) {
   return (
-    <div className="border border-zinc-200 bg-zinc-50 px-6 py-6">
-      <span className="mb-4 grid size-9 place-items-center bg-white font-mono text-sm font-semibold text-zinc-500">
+    <div className="border border-[var(--hairline)] bg-ink-800 px-6 py-6">
+      <span className="mb-4 grid size-9 place-items-center bg-ink-850 font-mono text-sm font-semibold text-mist-600">
         —
       </span>
-      <p className="font-semibold text-zinc-950">{title}</p>
-      <p className="mt-1 text-sm leading-6 text-zinc-600">{message}</p>
+      <p className="font-semibold text-mist-100">{title}</p>
+      <p className="mt-1 text-sm leading-6 text-mist-500">{message}</p>
     </div>
   );
 }

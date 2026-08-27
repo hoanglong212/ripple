@@ -53,45 +53,56 @@ export function DatasetTransparency({ compact = false }: { compact?: boolean }) 
     <aside
       aria-label="Dataset metadata"
       aria-live="polite"
-      className={`overflow-hidden border border-zinc-200 bg-white ${
+      className={`border border-[var(--hairline)] bg-ink-850 ${
         compact ? "p-5 sm:p-6" : "p-6 sm:p-8 lg:p-10"
       }`}
     >
-      <div className={`grid gap-8 ${compact ? "lg:grid-cols-[1fr_1.6fr]" : "lg:grid-cols-[0.8fr_1.2fr]"}`}>
+      <div
+        className={`grid gap-8 ${
+          compact ? "lg:grid-cols-[1fr_1.6fr]" : "lg:grid-cols-[0.8fr_1.2fr]"
+        }`}
+      >
         <div>
-          <p className="text-sm font-medium text-blue-700">Dataset and trust</p>
-          <h2 className="mt-3 text-2xl font-semibold tracking-[-0.035em] text-zinc-950 sm:text-3xl">
+          <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-mist-600">
+            dataset and trust
+          </p>
+          <h2 className="mt-4 text-2xl font-semibold tracking-[-0.035em] text-mist-100 sm:text-3xl">
             Transparent by design.
           </h2>
-          <p className="mt-4 max-w-md text-sm leading-6 text-zinc-600">
+          <p className="mt-4 max-w-md text-sm leading-6 text-mist-500">
             A curated, bounded snapshot — not the complete npm ecosystem. Every
             analysis result stays within versions Ripple has actually indexed.
           </p>
         </div>
-        <div className="grid border-l border-t border-zinc-200 sm:grid-cols-3">
+        <div className="grid border-t border-[var(--hairline)] sm:grid-cols-3">
           {stats.map((stat) => (
-            <div className="border-b border-r border-zinc-200 p-5" key={stat.label}>
-              <p className="font-mono text-3xl font-semibold tracking-[-0.04em] text-zinc-950">
+            <div
+              className="border-b border-l-2 border-b-[var(--hairline)] border-l-signal/40 px-5 py-5 first:border-l-signal"
+              key={stat.label}
+            >
+              <p className="font-mono text-3xl font-semibold tracking-[-0.04em] text-mist-100">
                 {stat.value?.toLocaleString() ?? "—"}
               </p>
-              <p className="mt-2 text-xs leading-5 text-zinc-500">{stat.label}</p>
+              <p className="mt-2 font-mono text-[0.7rem] uppercase tracking-[0.1em] text-mist-600">
+                {stat.label}
+              </p>
             </div>
           ))}
         </div>
       </div>
-      <div className="mt-8 flex flex-col gap-3 border-t border-zinc-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm font-semibold text-zinc-900">
+      <div className="mt-8 flex flex-col gap-3 border-t border-[var(--hairline)] pt-5 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm font-semibold text-mist-300">
           Within Ripple&apos;s indexed npm snapshot.
         </p>
-        <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs text-zinc-500">
-          <span>Bounded snapshot</span>
-          <span>Exact-version model</span>
+        <div className="flex flex-wrap gap-x-5 gap-y-2 font-mono text-[0.7rem] text-mist-600">
+          <span>bounded snapshot</span>
+          <span>exact-version model</span>
           <span>
             {state.status === "error"
-              ? "Live totals unavailable"
+              ? "totals unavailable"
               : state.status === "loading"
-                ? "Loading graph totals…"
-                : "Live graph totals"}
+                ? "loading totals…"
+                : "live graph totals"}
           </span>
         </div>
       </div>

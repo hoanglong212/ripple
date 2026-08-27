@@ -11,24 +11,24 @@ export default async function PackagePage({
   const packageName = name.map(decodeURIComponent).join("/");
 
   return (
-    <main className="min-h-screen bg-[#f8f7ff]">
-      <header className="border-b border-violet-200/70 bg-[#f8f7ff]">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-5 sm:px-8 lg:px-12">
+    <main className="min-h-screen bg-ink-900">
+      <header className="sticky top-0 z-20 border-b border-[var(--hairline)] bg-ink-900/85 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-4 sm:px-8 lg:px-12">
           <Link
             aria-label="Ripple home"
-            className="flex items-center gap-3 text-lg font-semibold tracking-[-0.03em] text-zinc-950"
+            className="flex items-center gap-3 text-[0.95rem] font-semibold tracking-[-0.02em] text-mist-100"
             href="/"
           >
-            <span className="grid size-8 place-items-center bg-violet-600 font-mono text-xs text-white shadow-[0_8px_22px_-8px_rgba(124,58,237,0.85)]">
+            <span className="grid size-7 place-items-center bg-signal font-mono text-[0.7rem] font-bold text-ink-950">
               R/
             </span>
             Ripple
           </Link>
           <Link
-            className="border-b border-violet-300 pb-1 text-sm font-semibold text-violet-800 hover:border-violet-700 hover:text-violet-950"
+            className="font-mono text-xs text-mist-500 transition-colors hover:text-signal"
             href="/"
           >
-            ← Search packages
+            ← search packages
           </Link>
         </div>
       </header>

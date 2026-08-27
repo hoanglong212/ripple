@@ -1,94 +1,162 @@
-const EDGES = [
+// The homepage's authored focal illustration. One source release, its three
+// resolved targets, and the requirement declared on each edge — drawn in a
+// single accent so the diagram reads as an instrument trace, not decoration.
+//
+// The requirement sits inside its target card rather than floating on the
+// curve: an edge label overlapping its own edge is unreadable at any size.
+const SOURCE = "ajv@8.20.0";
+
+const TARGETS = [
   {
-    color: "var(--ripple-cyan)",
-    label: "^3.0.1",
-    path: "M 154 210 C 270 210, 300 78, 434 78",
+    edge: "M 236 208 C 306 208, 322 84, 392 84",
+    requirement: "^3.0.1",
+    target: "fast-uri@3.1.6",
+    y: 84,
   },
   {
-    color: "var(--ripple-violet-soft)",
-    label: "^1.0.0",
-    path: "M 154 210 C 282 210, 306 210, 434 210",
+    edge: "M 236 208 C 306 208, 322 208, 392 208",
+    requirement: "^1.0.0",
+    target: "json-schema-traverse@1.0.0",
+    y: 208,
   },
   {
-    color: "var(--ripple-mint)",
-    label: "^2.0.2",
-    path: "M 154 210 C 270 210, 300 342, 434 342",
+    edge: "M 236 208 C 306 208, 322 332, 392 332",
+    requirement: "^2.0.2",
+    target: "require-from-string@2.0.2",
+    y: 332,
   },
 ] as const;
 
 export function DependencyRippleVisual() {
   return (
     <figure
-      aria-label="Animated diagram showing dependency signals propagating from ajv version 8.20.0 to three exact dependency versions"
-      className="ripple-visual relative min-h-[27rem] overflow-hidden border border-violet-300/40 bg-[#17132c] text-white shadow-[0_28px_70px_-34px_rgba(61,43,145,0.65)] sm:min-h-[31rem]"
+      aria-label="Diagram: ajv@8.20.0 resolves three exact dependency versions, each carrying its declared requirement"
+      className="overflow-hidden border border-[var(--hairline)] bg-ink-850"
       role="img"
     >
-      <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 text-xs text-violet-100/70">
+      <figcaption className="flex items-center justify-between border-b border-[var(--hairline)] px-5 py-3 font-mono text-[0.7rem] tracking-wide text-mist-600">
         <span className="flex items-center gap-2">
-          <span className="size-2 rounded-full bg-emerald-400" />
-          Live dependency trace
+          <span className="size-1.5 bg-signal" />
+          dependency trace
         </span>
-        <span className="font-mono">root-origin edges</span>
-      </div>
+        <span>root-origin edges</span>
+      </figcaption>
 
       <svg
-        aria-hidden="true"
-        className="absolute inset-x-0 top-14 h-[23rem] w-full sm:h-[27rem]"
-        preserveAspectRatio="none"
-        viewBox="0 0 640 420"
+        className="block w-full"
+        role="presentation"
+        viewBox="0 0 640 416"
+        xmlns="http://www.w3.org/2000/svg"
       >
-        {EDGES.map((edge) => (
-          <g key={edge.path}>
+        {TARGETS.map((item) => (
+          <g key={`${item.target}-edge`}>
             <path
-              className="dependency-edge-base"
-              d={edge.path}
+              d={item.edge}
               fill="none"
-              stroke="rgba(255,255,255,0.13)"
-              strokeWidth="2"
+              stroke="var(--color-signal)"
+              strokeOpacity="0.16"
+              strokeWidth="1"
             />
             <path
-              className="dependency-edge-signal"
-              d={edge.path}
+              className="edge-flow"
+              d={item.edge}
               fill="none"
-              stroke={edge.color}
-              strokeLinecap="round"
-              strokeWidth="2.5"
+              stroke="var(--color-signal)"
+              strokeOpacity="0.8"
+              strokeWidth="1.25"
             />
+          </g>
+        ))}
+
+        {/* Source release. A stroke-only ring marks selection; a filled slab
+            would read as a highlighter rather than an instrument cursor. */}
+        <g>
+          <rect
+            className="node-breathe"
+            fill="none"
+            height="92"
+            stroke="var(--color-signal)"
+            strokeWidth="1"
+            style={{ transformOrigin: "134px 208px" }}
+            width="214"
+            x="27"
+            y="162"
+          />
+          <rect
+            fill="var(--color-ink-800)"
+            height="72"
+            stroke="var(--color-signal)"
+            strokeWidth="1.25"
+            width="196"
+            x="38"
+            y="172"
+          />
+          <text
+            fill="var(--color-mist-600)"
+            fontFamily="var(--font-mono)"
+            fontSize="10"
+            x="54"
+            y="196"
+          >
+            selected release
+          </text>
+          <text
+            fill="var(--color-signal)"
+            fontFamily="var(--font-mono)"
+            fontSize="15"
+            fontWeight="600"
+            x="54"
+            y="220"
+          >
+            {SOURCE}
+          </text>
+        </g>
+
+        {/* Resolved exact targets, each carrying its own declared requirement. */}
+        {TARGETS.map((item) => (
+          <g key={`${item.target}-node`}>
+            <rect
+              fill="var(--color-ink-800)"
+              height="66"
+              stroke="var(--hairline-strong)"
+              strokeWidth="1"
+              width="222"
+              x="392"
+              y={item.y - 33}
+            />
+            <rect
+              fill="var(--color-signal)"
+              height="66"
+              width="2"
+              x="392"
+              y={item.y - 33}
+            />
+            <text
+              fill="var(--color-mist-600)"
+              fontFamily="var(--font-mono)"
+              fontSize="10"
+              x="408"
+              y={item.y - 11}
+            >
+              requires {item.requirement}
+            </text>
+            <text
+              fill="var(--color-mist-100)"
+              fontFamily="var(--font-mono)"
+              fontSize="12"
+              x="408"
+              y={item.y + 11}
+            >
+              {item.target}
+            </text>
           </g>
         ))}
       </svg>
 
-      <div className="ripple-source absolute left-[6%] top-[42%] z-10 w-[42%] max-w-48 border border-violet-300/50 bg-violet-500/20 p-4 backdrop-blur-sm">
-        <p className="text-[0.68rem] font-medium text-violet-200">Selected exact release</p>
-        <code className="mt-2 block break-all text-sm font-semibold text-white">
-          ajv@8.20.0
-        </code>
-        <p className="mt-3 flex items-center gap-2 text-[0.68rem] text-violet-200/75">
-          <span className="size-1.5 rounded-full bg-violet-300" />
-          dependency truth starts here
-        </p>
-      </div>
-
-      <div className="absolute right-[5%] top-[17%] z-10 w-[38%] border border-cyan-300/35 bg-[#211c39]/95 p-3">
-        <p className="text-[0.64rem] text-cyan-200">requires ^3.0.1</p>
-        <code className="mt-1 block break-all text-xs font-semibold">fast-uri@3.1.6</code>
-      </div>
-      <div className="absolute right-[5%] top-[45%] z-10 w-[38%] border border-violet-300/35 bg-[#211c39]/95 p-3">
-        <p className="text-[0.64rem] text-violet-200">requires ^1.0.0</p>
-        <code className="mt-1 block break-all text-xs font-semibold">
-          json-schema-traverse@1.0.0
-        </code>
-      </div>
-      <div className="absolute right-[5%] top-[73%] z-10 w-[38%] border border-emerald-300/35 bg-[#211c39]/95 p-3">
-        <p className="text-[0.64rem] text-emerald-200">requires ^2.0.2</p>
-        <code className="mt-1 block break-all text-xs font-semibold">
-          require-from-string@2.0.2
-        </code>
-      </div>
-
-      <figcaption className="absolute inset-x-5 bottom-4 z-10 border-t border-white/10 pt-3 text-xs leading-5 text-violet-100/65">
-        Each signal is one declared dependency edge from this exact release.
-      </figcaption>
+      <p className="border-t border-[var(--hairline)] px-5 py-3.5 text-xs leading-5 text-mist-600">
+        Each line is one declared dependency edge from this exact release. Change
+        the release and the lines change with it.
+      </p>
     </figure>
   );
 }

@@ -1,24 +1,22 @@
-"use client";
+﻿"use client";
 
 export default function GlobalError({ reset }: { reset: () => void }) {
   return (
-    <main className="surface-grid flex min-h-screen items-center px-6 py-16">
-      <div className="mx-auto w-full max-w-xl rounded-[2rem] border border-slate-200 bg-white p-8 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.45)] sm:p-10">
-        <div className="grid size-12 place-items-center rounded-full bg-rose-50 font-mono font-semibold text-rose-700">
-          !
-        </div>
-        <p className="mt-6 text-sm font-semibold uppercase tracking-[0.16em] text-rose-700">
-          Graph unavailable
+    <main className="flex min-h-screen items-center px-6 py-16">
+      <div className="mx-auto w-full max-w-xl border border-[var(--hairline)] bg-ink-850 p-8 sm:p-10">
+        <div className="h-px w-16 bg-rose" />
+        <p className="mt-6 font-mono text-[0.72rem] uppercase tracking-[0.2em] text-rose">
+          graph unavailable
         </p>
-        <h1 className="mt-3 text-3xl font-semibold text-slate-950">
+        <h1 className="mt-4 text-3xl font-semibold tracking-[-0.035em] text-mist-100">
           Ripple could not load this view.
         </h1>
-        <p className="mt-3 leading-7 text-slate-600">
+        <p className="mt-4 leading-7 text-mist-500">
           The indexed graph may be temporarily unavailable. Your selected package
           and version have not been changed.
         </p>
         <button
-          className="mt-7 rounded-xl bg-slate-950 px-5 py-3 font-semibold text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
+          className="lift mt-8 border border-signal bg-signal px-6 py-3 text-sm font-semibold text-ink-950 hover:bg-[var(--color-signal-deep)]"
           onClick={reset}
           type="button"
         >
