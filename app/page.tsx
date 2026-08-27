@@ -1,168 +1,186 @@
 import Link from "next/link";
 import { DatasetTransparency } from "@/components/dataset-transparency";
+import { DependencyRippleVisual } from "@/components/dependency-ripple-visual";
 import { PackageSearch } from "@/components/package-search";
 import { VersionDivergenceProof } from "@/components/version-divergence-proof";
 
-const FEATURES = [
+const CAPABILITIES = [
   {
-    description:
-      "Direct dependencies resolved for one exact release, each with the requirement that was actually declared.",
-    label: "Dependency Explorer",
-    number: "01",
-    question: "What does this release actually depend on?",
+    name: "Dependency Explorer",
+    question: "What does this exact release depend on?",
+    detail: "Inspect the resolved outgoing edges and declared requirement for one version.",
   },
   {
-    description:
-      "Every indexed version that can reach this one, split into direct and transitive, with hop counts. Bounded at four hops.",
-    label: "Downstream Impact",
-    number: "02",
-    question: "Who breaks if I change this?",
+    name: "Downstream Impact",
+    question: "Who is affected if this release changes?",
+    detail: "Trace direct and transitive dependents without mixing package releases.",
   },
   {
-    description:
-      "The shortest directed chain between two exact versions, carrying the requirement declared at every step.",
-    label: "Explain Path",
-    number: "03",
-    question: "Why are these two connected?",
+    name: "Explain Path",
+    question: "Why are these versions connected?",
+    detail: "Follow the shortest dependency chain, requirement by requirement.",
   },
 ] as const;
 
-const EXAMPLES = [
-  {
-    href: "/packages/ajv",
-    hint: "Two indexed releases, three of four dependencies differ",
-    label: "See it: ajv 6 vs ajv 8",
-    primary: true,
-  },
-  {
-    href: "/packages/%40hapi%2Fhoek",
-    hint: "24 indexed versions can reach one release",
-    label: "Trace @hapi/hoek's dependents",
-    primary: false,
-  },
-] as const;
+function CapabilityIcon({ index }: { index: number }) {
+  if (index === 0) {
+    return (
+      <svg fill="none" height="28" viewBox="0 0 28 28" width="28">
+        <circle cx="7" cy="14" r="3" stroke="currentColor" strokeWidth="1.8" />
+        <circle cx="21" cy="7" r="3" stroke="currentColor" strokeWidth="1.8" />
+        <circle cx="21" cy="21" r="3" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M10 13L18 8.5M10 15L18 19.5" stroke="currentColor" strokeWidth="1.8" />
+      </svg>
+    );
+  }
+
+  if (index === 1) {
+    return (
+      <svg fill="none" height="28" viewBox="0 0 28 28" width="28">
+        <circle cx="21" cy="14" r="3" stroke="currentColor" strokeWidth="1.8" />
+        <circle cx="7" cy="7" r="3" stroke="currentColor" strokeWidth="1.8" />
+        <circle cx="7" cy="21" r="3" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M10 8.5L18 13M10 19.5L18 15" stroke="currentColor" strokeWidth="1.8" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg fill="none" height="28" viewBox="0 0 28 28" width="28">
+      <circle cx="6" cy="14" r="3" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="22" cy="14" r="3" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M9 14H19" stroke="currentColor" strokeDasharray="2 3" strokeWidth="1.8" />
+      <path d="M15.5 10.5L19 14L15.5 17.5" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  );
+}
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen overflow-hidden">
-      <div className="surface-grid border-b border-slate-200">
-        <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6 sm:px-10">
+    <main className="min-h-screen bg-[#f8f7ff]">
+      <header className="border-b border-violet-200/70 bg-[#f8f7ff]">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-5 sm:px-8 lg:px-12">
           <Link
             aria-label="Ripple home"
-            className="flex items-center gap-2.5 text-xl font-semibold tracking-[-0.03em] text-slate-950"
+            className="flex items-center gap-3 text-lg font-semibold tracking-[-0.03em] text-[#191625]"
             href="/"
           >
-            <span className="grid size-8 place-items-center rounded-full bg-slate-950 text-sm text-white">
-              r
+            <span className="grid size-8 place-items-center bg-violet-600 font-mono text-xs text-white shadow-[0_8px_22px_-8px_rgba(124,58,237,0.85)]">
+              R/
             </span>
-            ripple<span className="-ml-2.5 text-cyan-600">/</span>
+            Ripple
           </Link>
-          <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.13em] text-slate-600">
-            <span className="size-1.5 rounded-full bg-cyan-500" />
-            npm snapshot
-          </div>
-        </header>
+          <p className="hidden items-center gap-2 text-xs font-medium text-violet-950/60 sm:flex">
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+            Exact-version npm intelligence
+          </p>
+        </div>
+      </header>
 
-        <section className="mx-auto grid w-full max-w-6xl gap-10 px-6 pb-20 pt-12 sm:px-10 sm:pb-24 sm:pt-16 lg:grid-cols-[1.02fr_0.98fr] lg:items-center lg:gap-16 lg:pb-28 lg:pt-20">
-          <div className="max-w-2xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-700">
-              npm dependency impact
-            </p>
-            <h1 className="mt-6 text-balance text-4xl font-semibold leading-[1.02] tracking-[-0.05em] text-slate-950 sm:text-6xl lg:text-[4.2rem] lg:leading-[0.98]">
-              Which exact versions break if this one changes?
+      <section className="border-b border-violet-200/70 bg-[#f8f7ff]">
+        <div className="mx-auto grid w-full max-w-7xl gap-14 px-5 py-20 sm:px-8 sm:py-28 lg:grid-cols-[1.12fr_0.88fr] lg:items-center lg:gap-20 lg:px-12 lg:py-32">
+          <div>
+            <h1 className="max-w-4xl text-balance text-5xl font-semibold leading-[0.98] tracking-[-0.04em] text-zinc-950 sm:text-7xl lg:text-[5.25rem]">
+              Understand what changes behind every{" "}
+              <span className="text-violet-600">package version.</span>
             </h1>
-            <p className="mt-7 max-w-xl text-lg leading-8 text-slate-600">
-              Package-level dependency tools cannot answer that. Different
-              releases of the same package resolve different dependencies.
-              Ripple models every edge between exact versions and shows the
-              requirement declared at every hop.
+            <p className="mt-8 max-w-2xl text-lg leading-8 text-zinc-600 sm:text-xl">
+              Ripple traces exact npm releases, their dependencies, and their
+              impact — because a package name does not tell the whole story.
             </p>
-
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              {EXAMPLES.map((example) => (
-                <Link
-                  className={`group rounded-2xl px-5 py-4 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 ${
-                    example.primary
-                      ? "bg-slate-950 text-white hover:bg-slate-800"
-                      : "border border-slate-300 bg-white/70 text-slate-800 hover:border-slate-950"
-                  }`}
-                  href={example.href}
-                  key={example.href}
-                >
-                  <span className="block text-sm font-semibold">
-                    {example.label}{" "}
-                    <span aria-hidden="true" className="inline-block transition-transform group-hover:translate-x-0.5">
-                      →
-                    </span>
-                  </span>
-                  <span
-                    className={`mt-1 block text-xs leading-5 ${
-                      example.primary ? "text-slate-400" : "text-slate-500"
-                    }`}
-                  >
-                    {example.hint}
-                  </span>
-                </Link>
-              ))}
+            <div className="mt-10 flex max-w-sm flex-col gap-3 sm:max-w-none sm:flex-row">
+              <Link
+                className="inline-flex h-12 w-full items-center justify-center bg-violet-600 px-5 text-sm font-semibold text-white shadow-[0_12px_28px_-12px_rgba(124,58,237,0.9)] hover:bg-violet-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600 sm:w-44"
+                href="/packages/ajv"
+              >
+                Try AJV Example
+              </Link>
+              <Link
+                className="inline-flex h-12 w-full items-center justify-center border border-violet-300 bg-white px-5 text-sm font-semibold text-violet-950 hover:border-violet-600 hover:text-violet-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600 sm:w-44"
+                href="#package-search"
+              >
+                Search Packages
+              </Link>
             </div>
           </div>
 
-          <PackageSearch />
-        </section>
-      </div>
+          <DependencyRippleVisual />
+        </div>
+      </section>
 
-      <section className="mx-auto w-full max-w-6xl px-6 py-16 sm:px-10 sm:py-20">
-        <VersionDivergenceProof />
+      <section className="border-b border-violet-200/70 bg-white">
+        <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 sm:py-28 lg:px-12">
+          <VersionDivergenceProof />
+        </div>
+      </section>
 
-        <div className="mt-20 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-700">
-              Three questions Ripple answers
-            </p>
-            <h2 className="mt-3 max-w-2xl text-3xl font-semibold tracking-[-0.035em] text-slate-950 sm:text-4xl">
-              Trace dependencies without losing exact-version context.
+      <section className="border-b border-violet-200/70 bg-[#f1efff]" id="capabilities">
+        <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 sm:py-28 lg:px-12">
+          <div className="max-w-2xl">
+            <h2 className="text-4xl font-semibold tracking-[-0.04em] text-zinc-950 sm:text-5xl">
+              Three questions. One exact release at the center.
             </h2>
+            <p className="mt-5 text-base leading-7 text-violet-950/65">
+              Ripple keeps the direction of every edge visible, so each answer
+              reads like a cause-and-effect story rather than a graph dump.
+            </p>
           </div>
-          <p className="max-w-sm text-sm leading-6 text-slate-500">
-            Every result stays bounded to versions actually indexed in Ripple.
-          </p>
-        </div>
-
-        <div className="mt-10 grid gap-5 lg:grid-cols-3">
-          {FEATURES.map((feature) => (
-            <article
-              className="flex min-h-64 flex-col rounded-[1.75rem] border border-slate-200 bg-white p-6 sm:p-7"
-              key={feature.label}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <span className="grid size-11 place-items-center rounded-full bg-slate-950 font-mono text-sm font-semibold text-white">
-                  {feature.number}
-                </span>
-                <span className="rounded-full bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-800">
-                  {feature.label}
-                </span>
-              </div>
-              <div className="mt-auto pt-10">
-                <h3 className="text-xl font-semibold leading-7 tracking-tight text-slate-950">
-                  {feature.question}
+          <div className="mt-14 overflow-hidden border border-violet-200 bg-white shadow-[0_24px_60px_-44px_rgba(76,29,149,0.55)]">
+            {CAPABILITIES.map((capability, index) => (
+              <article
+                className="group grid gap-5 border-b border-violet-100 p-6 last:border-b-0 sm:grid-cols-[4.5rem_0.75fr_1.05fr_1fr] sm:items-center sm:gap-8 sm:p-8"
+                key={capability.name}
+              >
+                <div
+                  aria-hidden="true"
+                  className={`grid size-14 place-items-center rounded-2xl ${
+                    index === 0
+                      ? "bg-cyan-100 text-cyan-700"
+                      : index === 1
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-violet-100 text-violet-700"
+                  }`}
+                >
+                  <CapabilityIcon index={index} />
+                </div>
+                <h3 className="font-mono text-sm font-semibold text-violet-700">
+                  {capability.name}
                 </h3>
-                <p className="mt-3 text-sm leading-6 text-slate-600">
-                  {feature.description}
+                <p className="text-xl font-semibold tracking-[-0.02em] text-zinc-950">
+                  {capability.question}
                 </p>
-              </div>
-            </article>
-          ))}
+                <p className="text-sm leading-6 text-violet-950/65">{capability.detail}</p>
+              </article>
+            ))}
+          </div>
         </div>
+      </section>
 
-        <div className="mt-20">
+      <section className="border-b border-violet-950 bg-[#17132c] text-white" id="package-search">
+        <div className="mx-auto grid w-full max-w-7xl gap-12 px-5 py-20 sm:px-8 sm:py-24 lg:grid-cols-[0.7fr_1.3fr] lg:items-start lg:gap-20 lg:px-12">
+          <div>
+            <h2 className="text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
+              Start with a package. Inspect one release.
+            </h2>
+            <p className="mt-5 max-w-md text-base leading-7 text-zinc-400">
+              Package search finds the identity. Ripple begins dependency
+              analysis only after an exact indexed version is selected.
+            </p>
+          </div>
+          <PackageSearch />
+        </div>
+      </section>
+
+      <section className="bg-[#f8f7ff]">
+        <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 sm:py-24 lg:px-12">
           <DatasetTransparency />
         </div>
       </section>
 
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-6 py-7 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-10">
-          <p className="font-semibold text-slate-800">ripple/</p>
-          <p>Exact-version npm dependency exploration.</p>
+      <footer className="border-t border-zinc-200 bg-white">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-5 py-7 text-sm text-zinc-500 sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-12">
+          <p className="font-semibold text-zinc-950">Ripple</p>
+          <p>Dependency answers for exact npm releases.</p>
         </div>
       </footer>
     </main>

@@ -1,136 +1,90 @@
 import Link from "next/link";
 
-// Static, verified against the indexed snapshot. This section is an argument,
-// not a query: it must render identically even when CognoDB is unreachable.
-const COMPARISON = {
-  left: {
-    versionId: "ajv@6.15.0",
-    dependencies: [
-      { name: "fast-deep-equal@3.1.3", requirement: "^3.1.1", tone: "shared" },
-      {
-        name: "fast-json-stable-stringify@2.1.0",
-        requirement: "^2.0.0",
-        tone: "unique",
-      },
-      {
-        name: "json-schema-traverse@0.4.1",
-        requirement: "^0.4.1",
-        tone: "diverged",
-      },
-      { name: "uri-js@4.4.1", requirement: "^4.2.2", tone: "unique" },
-    ],
+const RELEASES = [
+  {
+    dependency: "json-schema-traverse@0.4.1",
+    requirement: "^0.4.1",
+    version: "ajv@6.15.0",
   },
-  right: {
-    versionId: "ajv@8.20.0",
-    dependencies: [
-      { name: "fast-deep-equal@3.1.3", requirement: "^3.1.3", tone: "shared" },
-      { name: "fast-uri@3.1.6", requirement: "^3.0.1", tone: "unique" },
-      {
-        name: "json-schema-traverse@1.0.0",
-        requirement: "^1.0.0",
-        tone: "diverged",
-      },
-      {
-        name: "require-from-string@2.0.2",
-        requirement: "^2.0.2",
-        tone: "unique",
-      },
-    ],
+  {
+    dependency: "json-schema-traverse@1.0.0",
+    requirement: "^1.0.0",
+    version: "ajv@8.20.0",
   },
-} as const;
-
-type Tone = "shared" | "unique" | "diverged";
-
-const TONE_STYLES: Record<Tone, string> = {
-  diverged: "border-amber-300 bg-amber-50",
-  shared: "border-slate-200 bg-white",
-  unique: "border-slate-200 bg-white",
-};
-
-function DependencyColumn({
-  side,
-}: {
-  side: (typeof COMPARISON)["left" | "right"];
-}) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
-      <code className="block break-all font-mono text-sm font-semibold text-slate-950">
-        {side.versionId}
-      </code>
-      <p className="mt-1 text-xs text-slate-500">4 direct dependencies</p>
-      <ul className="mt-4 space-y-2">
-        {side.dependencies.map((dependency) => (
-          <li
-            className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5 ${
-              TONE_STYLES[dependency.tone]
-            }`}
-            key={dependency.name}
-          >
-            <code className="min-w-0 break-all font-mono text-xs font-medium text-slate-800">
-              {dependency.name}
-            </code>
-            <code className="shrink-0 font-mono text-[0.68rem] text-slate-500">
-              {dependency.requirement}
-            </code>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
+] as const;
 
 export function VersionDivergenceProof() {
   return (
-    <section
-      aria-labelledby="divergence-heading"
-      className="scroll-mt-8 rounded-[2rem] border border-slate-200 bg-white p-6 sm:p-8"
-      id="version-divergence"
-    >
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <section aria-labelledby="divergence-heading" id="version-divergence">
+      <div className="grid gap-10 lg:grid-cols-[0.72fr_1.28fr] lg:gap-20">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-700">
-            Why the package name is not enough
-          </p>
           <h2
-            className="mt-3 max-w-2xl text-3xl font-semibold tracking-[-0.035em] text-slate-950 sm:text-4xl"
+            className="text-4xl font-semibold leading-tight tracking-[-0.04em] text-zinc-950 sm:text-5xl"
             id="divergence-heading"
           >
-            Same package. Different dependency truth.
+            Same package.
+            <br />
+            <span className="text-violet-600">Different dependency truth.</span>
           </h2>
+          <p className="mt-6 max-w-md text-base leading-7 text-zinc-600">
+            The name stays the same. The dependency tree does not. Package-level
+            answers blur together releases that never shipped together.
+          </p>
+          <Link
+            className="mt-7 inline-flex items-center gap-2 border-b border-violet-500 pb-1 text-sm font-semibold text-violet-700 hover:border-violet-800 hover:text-violet-900 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet-600"
+            href="/packages/ajv"
+          >
+            Inspect both AJV releases <span aria-hidden="true">→</span>
+          </Link>
         </div>
-        <Link
-          className="w-fit rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-800 transition-colors hover:border-slate-950 hover:bg-slate-950 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
-          href="/packages/ajv"
-        >
-          Open this in Ripple →
-        </Link>
-      </div>
 
-      <div className="mt-8 grid gap-4 lg:grid-cols-2">
-        <DependencyColumn side={COMPARISON.left} />
-        <DependencyColumn side={COMPARISON.right} />
-      </div>
-
-      <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5 sm:p-6">
-        <p className="text-base leading-7 text-slate-700">
-          Three of four dependencies differ.{" "}
-          <span className="rounded-md bg-amber-100 px-1.5 py-0.5 font-mono text-sm font-semibold text-amber-900">
-            json-schema-traverse
-          </span>{" "}
-          resolves to a different exact version of the same package, and even
-          the one shared dependency carries a different declared requirement.
-        </p>
-        <p className="mt-4 text-base leading-7 text-slate-700">
-          A graph that stores dependencies on the{" "}
-          <span className="font-mono text-sm font-semibold text-slate-950">
-            Package
-          </span>{" "}
-          node has to merge these two lists. It then claims AJV depends on
-          json-schema-traverse 0.4.1 <em>and</em> 1.0.0 at the same time, and on
-          both uri-js <em>and</em> fast-uri. No published release ever did.
-          Every impact result built on that node is answering a question about a
-          package that never shipped.
-        </p>
+        <div className="overflow-hidden border border-violet-200 bg-[#fbfaff] shadow-[0_24px_60px_-44px_rgba(76,29,149,0.5)]">
+          <div className="flex items-center justify-between border-b border-violet-100 bg-violet-50 px-5 py-3 text-xs text-violet-950/60 sm:px-6">
+            <span>One package identity</span>
+            <span>Two release truths</span>
+          </div>
+          {RELEASES.map((release, index) => (
+            <div
+              className={`grid gap-5 px-5 py-7 sm:grid-cols-[minmax(0,0.9fr)_3rem_minmax(0,1.1fr)] sm:items-center sm:px-6 ${
+                index === 0 ? "border-b border-violet-100 bg-orange-50/70" : "bg-violet-50/70"
+              }`}
+              key={release.version}
+            >
+              <div>
+                <p className={`mb-2 text-xs font-medium ${index === 0 ? "text-orange-700" : "text-violet-700"}`}>
+                  {index === 0 ? "Earlier release" : "Later release"}
+                </p>
+                <code className="break-all text-base font-semibold text-zinc-950">
+                  {release.version}
+                </code>
+              </div>
+              <div className="flex items-center gap-3 text-zinc-300 sm:block sm:text-center">
+                <span className="h-px flex-1 bg-zinc-300 sm:hidden" />
+                <span aria-hidden="true" className={`font-mono ${index === 0 ? "text-orange-500" : "text-violet-500"}`}>
+                  →
+                </span>
+                <span className="h-px flex-1 bg-zinc-300 sm:hidden" />
+              </div>
+              <div className={`border-l pl-4 ${index === 0 ? "border-orange-400" : "border-violet-500"}`}>
+                <p className="mb-2 text-xs text-zinc-500">
+                  requires <code className={index === 0 ? "text-orange-700" : "text-violet-700"}>{release.requirement}</code>
+                </p>
+                <code className="break-all text-base font-semibold text-zinc-950">
+                  {release.dependency}
+                </code>
+              </div>
+            </div>
+          ))}
+          <div className="grid gap-2 border-t border-violet-100 bg-white px-5 py-5 text-sm leading-6 text-zinc-700 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-4 sm:px-6">
+            <span className="w-fit rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-800">
+              What changed?
+            </span>
+            <span>
+              AJV moved from <code className="font-semibold text-orange-700">0.4.1</code> to{" "}
+              <code className="font-semibold text-violet-700">1.0.0</code>. A package-only view would hide this release-level difference.
+            </span>
+          </div>
+        </div>
       </div>
     </section>
   );

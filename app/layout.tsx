@@ -3,15 +3,21 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Ripple — Which exact versions break if this one changes?",
+  title: "Ripple — Exact-version npm dependency tracing",
   description:
-    "Version-level npm dependency impact. Ripple models every edge between exact versions and shows the requirement declared at every hop.",
+    "Understand what changes behind every package version. Trace exact npm releases, their dependencies, and their impact.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="min-h-full">{children}</body>
+      <body
+        className="min-h-full"
+        data-design-direction="dependency-signal"
+        data-design-style="expressive-developer-tool"
+      >
+        {children}
+      </body>
     </html>
   );
 }
