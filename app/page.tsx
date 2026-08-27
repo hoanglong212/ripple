@@ -178,11 +178,12 @@ export default function HomePage() {
         <div className="mx-auto grid w-full max-w-7xl gap-12 px-5 py-20 sm:px-8 sm:py-24 lg:grid-cols-[0.72fr_1.28fr] lg:items-start lg:gap-20 lg:px-12">
           <div>
             <h2 className="text-3xl font-semibold tracking-[-0.04em] text-mist-100 sm:text-[2.5rem] sm:leading-[1.08]">
-              Start with a package. Inspect one release.
+              Look up any public npm package.
             </h2>
             <p className="mt-5 max-w-md text-base leading-7 text-mist-500">
-              Package search finds the identity. Ripple begins dependency
-              analysis only after an exact indexed version is selected.
+              Learn what a package does, how to install it, and where its docs
+              live. If Ripple has indexed it, continue into exact-version
+              dependency analysis.
             </p>
           </div>
           <PackageSearch />

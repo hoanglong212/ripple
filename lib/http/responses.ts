@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
+import { NpmRegistryUnavailableError } from "@/lib/registry/npm-registry-client";
 import {
   DatabaseUnavailableError,
   InvalidInputError,
@@ -64,6 +65,14 @@ export function errorResponse(error: unknown): NextResponse {
 
   if (error instanceof DatabaseUnavailableError) {
     console.error("Ripple database request failed:", error.cause ?? error);
+    return mappedErrorResponse(503, {
+      code: error.code,
+      message: error.message,
+    });
+  }
+
+  if (error instanceof NpmRegistryUnavailableError) {
+    console.error("npm registry request failed:", error.cause ?? error);
     return mappedErrorResponse(503, {
       code: error.code,
       message: error.message,

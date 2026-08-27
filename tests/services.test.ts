@@ -12,6 +12,11 @@ import type {
   VersionDetail,
 } from "@/lib/domain/packages";
 import { errorResponse } from "@/lib/http/responses";
+import type {
+  NpmRegistry,
+  RegistryPackageDetail,
+  RegistryPackageSummary,
+} from "@/lib/registry/npm-registry-client";
 import {
   DatabaseUnavailableError,
   InvalidInputError,
@@ -85,6 +90,38 @@ class FakeGraphRepository implements GraphRepository {
   }
 }
 
+class FakeNpmRegistry implements NpmRegistry {
+  packageDetail: RegistryPackageDetail | null = null;
+  searchResults: RegistryPackageSummary[] = [];
+  // Set to make both calls reject, so the degradation branches of
+  // Promise.allSettled can be exercised rather than only the happy path.
+  failure: Error | null = null;
+
+  async findPackage(): Promise<RegistryPackageDetail | null> {
+    if (this.failure !== null) {
+      throw this.failure;
+    }
+    return this.packageDetail;
+  }
+
+  async searchPackages(): Promise<RegistryPackageSummary[]> {
+    if (this.failure !== null) {
+      throw this.failure;
+    }
+    return this.searchResults;
+  }
+}
+
+class UnavailableGraphRepository extends FakeGraphRepository {
+  override async searchPackages(): Promise<PackageSearchResult[]> {
+    throw new DatabaseUnavailableError();
+  }
+
+  override async findPackage(): Promise<PackageDetail | null> {
+    throw new DatabaseUnavailableError();
+  }
+}
+
 describe("Ripple P0 services", () => {
   it("returns an exact package search result", async () => {
     const repository = new FakeGraphRepository();
@@ -99,6 +136,126 @@ describe("Ripple P0 services", () => {
       { name: "express", indexedVersionCount: 1 },
     ]);
     assert.deepEqual(repository.lastSearch, { query: "express", limit: 20 });
+  });
+
+  it("discovers public npm packages outside the graph snapshot", async () => {
+    const repository = new FakeGraphRepository();
+    const registry = new FakeNpmRegistry();
+    registry.searchResults = [
+      {
+        description: "React is a JavaScript library for building user interfaces.",
+        latestVersion: "19.2.8",
+        name: "react",
+      },
+    ];
+    const service = new PackageService(repository, registry);
+
+    const result = await service.searchPackages("react");
+
+    assert.deepEqual(result, [
+      {
+        description: "React is a JavaScript library for building user interfaces.",
+        graphStatus: "not-indexed",
+        indexedVersionCount: 0,
+        latestVersion: "19.2.8",
+        name: "react",
+      },
+    ]);
+  });
+
+  it("returns an npm package guide without inventing graph versions", async () => {
+    const repository = new FakeGraphRepository();
+    const registry = new FakeNpmRegistry();
+    registry.packageDetail = {
+      description: "React is a JavaScript library for building user interfaces.",
+      homepageUrl: "https://react.dev/",
+      keywords: ["react"],
+      latestVersion: "19.2.8",
+      name: "react",
+      npmUrl: "https://www.npmjs.com/package/react",
+      repositoryUrl: "https://github.com/react/react.git",
+    };
+    const service = new PackageService(repository, registry);
+
+    const result = await service.getPackage("react");
+
+    assert.equal(result.graphStatus, "not-indexed");
+    assert.deepEqual(result.versions, []);
+    assert.equal(result.metadata?.installCommand, "npm install react");
+    assert.equal(result.metadata?.description, registry.packageDetail.description);
+  });
+
+  it("keeps graph results when the npm catalog is unavailable", async () => {
+    const repository = new FakeGraphRepository();
+    repository.searchResults = [{ indexedVersionCount: 2, name: "ajv" }];
+    const registry = new FakeNpmRegistry();
+    registry.failure = new Error("registry down");
+    const service = new PackageService(repository, registry);
+
+    const result = await service.searchPackages("ajv");
+
+    assert.deepEqual(result, [
+      { graphStatus: "indexed", indexedVersionCount: 2, name: "ajv" },
+    ]);
+  });
+
+  it("marks graph status unavailable when CognoDB is down but the catalog answers", async () => {
+    const registry = new FakeNpmRegistry();
+    registry.searchResults = [{ latestVersion: "8.20.0", name: "ajv" }];
+    const service = new PackageService(new UnavailableGraphRepository(), registry);
+
+    const result = await service.searchPackages("ajv");
+
+    assert.equal(result.length, 1);
+    assert.equal(result[0].graphStatus, "unavailable");
+    assert.equal(result[0].indexedVersionCount, 0);
+  });
+
+  it("surfaces the catalog failure when neither source answers", async () => {
+    const registry = new FakeNpmRegistry();
+    registry.failure = new Error("registry down");
+    const service = new PackageService(new UnavailableGraphRepository(), registry);
+
+    await assert.rejects(service.searchPackages("ajv"), /registry down/);
+  });
+
+  it("keeps indexed packages the catalog did not return, matched case-insensitively", async () => {
+    const repository = new FakeGraphRepository();
+    repository.searchResults = [
+      { indexedVersionCount: 2, name: "AJV" },
+      { indexedVersionCount: 1, name: "ajv-keywords" },
+    ];
+    const registry = new FakeNpmRegistry();
+    registry.searchResults = [{ latestVersion: "8.20.0", name: "ajv" }];
+    const service = new PackageService(repository, registry);
+
+    const result = await service.searchPackages("ajv");
+
+    // "AJV" and "ajv" are one package: the catalog entry wins the row and the
+    // indexed count survives the merge. "ajv-keywords" has no catalog row, so
+    // it must still be listed rather than dropped.
+    assert.equal(result.length, 2);
+    const merged = result.find((item) => item.name === "ajv");
+    assert.equal(merged?.indexedVersionCount, 2);
+    assert.equal(merged?.graphStatus, "indexed");
+    assert.equal(
+      result.find((item) => item.name === "ajv-keywords")?.graphStatus,
+      "indexed",
+    );
+  });
+
+  it("reports a package missing from both the graph and the catalog", async () => {
+    const service = new PackageService(
+      new FakeGraphRepository(),
+      new FakeNpmRegistry(),
+    );
+
+    await assert.rejects(
+      service.getPackage("definitely-not-a-real-package"),
+      (error) =>
+        error instanceof NotIndexedError &&
+        error.code === "PACKAGE_NOT_INDEXED",
+    );
   });
 
   it("retrieves only indexed versions in descending semver order", async () => {

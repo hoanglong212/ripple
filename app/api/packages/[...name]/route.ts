@@ -2,6 +2,7 @@ import type { NextResponse } from "next/server";
 import { DATASET_SCOPE } from "@/lib/domain/packages";
 import { errorResponse, successResponse } from "@/lib/http/responses";
 import { packageNameSchema } from "@/lib/http/schemas";
+import { getNpmRegistryClient } from "@/lib/registry/npm-registry-client";
 import { getGraphRepository } from "@/lib/repositories/graph-repository";
 import { PackageService } from "@/lib/services/package-service";
 
@@ -21,12 +22,18 @@ export async function GET(
     const name = packageNameSchema.parse(
       parameters.name.map(decodeURIComponent).join("/"),
     );
-    const service = new PackageService(getGraphRepository());
+    const service = new PackageService(
+      getGraphRepository(),
+      getNpmRegistryClient(),
+    );
     const packageDetail = await service.getPackage(name);
 
     return successResponse(
       { package: packageDetail },
-      { scope: DATASET_SCOPE },
+      {
+        catalogScope: "Package metadata from the public npm registry.",
+        scope: DATASET_SCOPE,
+      },
     );
   } catch (error: unknown) {
     return errorResponse(error);

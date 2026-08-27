@@ -8,7 +8,10 @@ export interface DatasetStats {
 }
 
 export interface PackageSearchResult {
+  description?: string;
+  graphStatus?: "indexed" | "not-indexed" | "unavailable";
   indexedVersionCount: number;
+  latestVersion?: string;
   name: string;
 }
 
@@ -18,6 +21,16 @@ export interface IndexedVersion {
 }
 
 export interface PackageDetail {
+  graphStatus?: "indexed" | "not-indexed" | "unavailable";
+  metadata?: {
+    description?: string;
+    homepageUrl?: string;
+    installCommand: string;
+    keywords: string[];
+    latestVersion?: string;
+    npmUrl: string;
+    repositoryUrl?: string;
+  };
   name: string;
   versions: IndexedVersion[];
 }

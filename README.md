@@ -141,6 +141,49 @@ in-memory fake with no database.
 
 See [docs/technical-design.md](docs/technical-design.md) for the frozen P0 boundaries.
 
+## Two sources, one boundary
+
+Ripple reads from two places, and they answer different questions:
+
+| Source | Answers | Scope |
+| --- | --- | --- |
+| CognoDB graph | dependencies, downstream impact, paths | the 426-package indexed snapshot |
+| npm registry | name, description, latest version, links | all public npm packages |
+
+The registry was added because search over a 426-package snapshot returns nothing for almost
+every real query — typing `react` produced an empty result and read as a broken product, not
+as a bounded one. The catalog makes the boundary visible instead of invisible: every package
+carries a `graphStatus` of `indexed`, `not-indexed`, or `unavailable`, and a package outside
+the snapshot gets a page that says so and explains what Ripple cannot answer for it.
+
+**What this does not change.** The registry never contributes a dependency edge, a hop count,
+or a path. Every graph answer still comes only from exact versions in the snapshot. The
+registry supplies identity and description; the graph supplies dependency truth. They are
+merged for display and never for traversal.
+
+Both calls run concurrently and fail independently: a dead registry degrades to graph-only
+results, a dead CognoDB degrades to catalog-only results with `graphStatus: "unavailable"`,
+and only a double failure surfaces an error. All four combinations are covered by tests.
+
+## Measured latency
+
+The H0 spike established query compatibility, not performance. These are the first real
+numbers, measured against the live instance:
+
+```text
+RETURN 1  (touches no data)          ~809 ms
+count all Versions                   ~809 ms
+4-hop impact traversal               ~812 ms
+static page, no database             ~3 ms
+```
+
+A query that reads nothing costs the same as a four-hop traversal, so the cost is the network
+round-trip to the hosted CognoDB instance, not query execution or anything in this codebase.
+Each API request performs one round-trip — there is no N+1 and no per-request handshake.
+
+This is a property of where the database lives, and it bounds what any UI here can feel like
+until results are cached. No performance claim beyond these measurements is made.
+
 ## Ingestion correctness
 
 deps.dev is the only external source used for the P0 snapshot. Ripple acquires the resolved
@@ -225,14 +268,26 @@ npm run build
 npm run graph:verify
 ```
 
-`npm run test` runs 15 tests across three suites: exact-version service semantics, deps.dev
-root-origin extraction and bundled-node filtering, and HTTP error mapping. Repository record
-mapping and route handlers are not covered by unit tests; `graph:verify` exercises them
-against the live database instead.
+`npm run test` runs 22 tests across three suites: exact-version service semantics, deps.dev
+root-origin extraction and bundled-node filtering, and HTTP error mapping.
+
+Because two independent sources now back the catalog, the search path is tested for every
+combination of them failing — graph only, catalog only, both, and neither — so a dead npm
+registry degrades to graph results and a dead CognoDB degrades to catalog results rather than
+failing the request.
+
+Repository record mapping and route handlers are not covered by unit tests; `graph:verify`
+exercises them against the live database instead.
 
 ## Scope
 
-P0 is complete. Authentication, vulnerability and license analysis, maintainer data, package
-descriptions, AI features, full-ecosystem crawling, and Package-level dependency edges are
-intentionally out of scope. The first P1 feature is Version Divergence — a direct comparison
-between two exact versions of one package, which the AJV case above is the argument for.
+P0 is complete. Authentication, vulnerability and license analysis, maintainer data, AI
+features, full-ecosystem crawling, and Package-level dependency edges are intentionally out
+of scope.
+
+Package descriptions **were** out of scope in the frozen P0 design and are now shipped — see
+[Two sources, one boundary](#two-sources-one-boundary) for why that changed and what it does
+not change. `docs/technical-design.md` records the amendment.
+
+The first P1 feature is Version Divergence — a direct comparison between two exact versions
+of one package, which the AJV case above is the argument for.

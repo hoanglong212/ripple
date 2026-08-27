@@ -12,7 +12,7 @@ import { ExplainConnection } from "@/components/explain-connection";
 
 interface PackageResponse {
   data: { package: PackageDetail };
-  meta: { scope: string };
+  meta: { catalogScope?: string; scope: string };
 }
 
 interface VersionResponse {
@@ -228,7 +228,7 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
       <StatusCard
         action
         message={packageState.message}
-        title="Package not indexed"
+        title="Package not found"
       />
     );
   }
@@ -238,7 +238,7 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
       <StatusCard
         action
         message={packageState.message}
-        title="Database unavailable"
+        title="Package lookup unavailable"
         tone="error"
       />
     );
@@ -246,77 +246,163 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
 
   const packageDetail = packageState.response.data.package;
   const versionCount = packageDetail.versions.length;
+  const metadata = packageDetail.metadata;
+  const graphStatus = packageDetail.graphStatus ?? "indexed";
+  const isGraphIndexed = graphStatus === "indexed" && versionCount > 0;
 
   return (
     <div className="space-y-6">
       <section className="overflow-hidden border border-[var(--hairline)] bg-ink-850">
-        <div className="grid lg:grid-cols-[1fr_22rem]">
+        <div className="grid lg:grid-cols-[minmax(0,1.3fr)_minmax(19rem,0.7fr)]">
           <div className="p-6 sm:p-9 lg:p-10">
-            <p className="text-sm font-medium text-signal">Package identity</p>
-            <div className="mt-5 flex flex-wrap items-baseline gap-x-4 gap-y-3">
-              <h1 className="break-all font-mono text-4xl font-semibold tracking-[-0.04em] text-mist-100 sm:text-6xl">
-                {packageDetail.name}
-              </h1>
-              <span className="shrink-0 bg-signal/10 px-3 py-1.5 text-xs font-semibold text-signal">
-                {versionCount} indexed version{versionCount === 1 ? "" : "s"}
+            <h1 className="break-all font-mono text-4xl font-semibold tracking-[-0.04em] text-mist-100 sm:text-6xl">
+              {packageDetail.name}
+            </h1>
+
+            <div className="mt-5 flex flex-wrap items-center gap-2.5">
+              <span className="font-mono text-[0.68rem] uppercase tracking-[0.12em] text-mist-600">
+                Public npm package
+              </span>
+              <span
+                className={`border px-2.5 py-1 font-mono text-[0.6rem] uppercase tracking-[0.08em] ${
+                  graphStatus === "indexed"
+                    ? "border-signal/40 bg-signal/[0.07] text-signal"
+                    : "border-[var(--hairline)] text-mist-500"
+                }`}
+              >
+                {graphStatus === "indexed"
+                  ? `${versionCount} indexed version${versionCount === 1 ? "" : "s"}`
+                  : graphStatus === "unavailable"
+                    ? "graph status unavailable"
+                    : "catalog only"}
               </span>
             </div>
-            <div className="mt-8 max-w-2xl border-l border-signal pl-5">
-              <h2 className="text-base font-semibold text-mist-100">Why versions matter</h2>
-              <p className="mt-1 text-sm leading-6 text-mist-500">
-                Different releases can resolve different dependency trees.
+
+            <div className="mt-9 max-w-3xl border-t border-[var(--hairline)] pt-6">
+              <h2 className="text-sm font-semibold text-mist-100">
+                What this package does
+              </h2>
+              <p className="mt-3 text-base leading-7 text-mist-400">
+                {metadata?.description ??
+                  "The npm registry does not currently provide a description for this package."}
               </p>
             </div>
-            <p className="mt-8 text-xs text-mist-600">
-              {packageState.response.meta.scope}
-            </p>
-          </div>
 
-          <div className="flex flex-col justify-between border-t border-[var(--hairline)] bg-ink-800 p-6 sm:p-8 lg:border-l lg:border-t-0">
-            <div>
-              <p className="text-sm font-semibold text-mist-100">Indexed version selector</p>
-              <p className="mt-2 text-sm leading-6 text-mist-500">
-                Choose the exact release Ripple should use for every answer below.
-              </p>
-              {selectedVersionId !== "" && (
-                <div className="mt-5 border border-[var(--hairline)] bg-ink-850 p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="grid size-8 shrink-0 place-items-center bg-signal text-xs font-bold text-ink-950">
-                      V
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-[0.68rem] text-signal">All analysis starts from</p>
-                      <code className="mt-1 block truncate text-xs font-semibold text-mist-100">
-                        {selectedVersionId}
-                      </code>
-                    </div>
-                  </div>
-                </div>
+            {(metadata?.keywords.length ?? 0) > 0 && (
+              <div className="mt-5 flex flex-wrap gap-2">
+                {metadata?.keywords.map((keyword) => (
+                  <span
+                    className="border border-[var(--hairline)] px-2.5 py-1 font-mono text-[0.65rem] text-mist-600"
+                    key={keyword}
+                  >
+                    {keyword}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+              {metadata?.npmUrl && (
+                <a
+                  className="font-semibold text-signal underline decoration-signal/40 underline-offset-4 hover:decoration-signal"
+                  href={metadata.npmUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  npm package page
+                </a>
+              )}
+              {metadata?.homepageUrl && (
+                <a
+                  className="text-mist-400 underline decoration-[var(--hairline-strong)] underline-offset-4 hover:text-mist-100"
+                  href={metadata.homepageUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  Documentation
+                </a>
+              )}
+              {metadata?.repositoryUrl && (
+                <a
+                  className="text-mist-400 underline decoration-[var(--hairline-strong)] underline-offset-4 hover:text-mist-100"
+                  href={metadata.repositoryUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  Source repository
+                </a>
               )}
             </div>
-            {versionCount > 0 ? (
-              <VersionSelector
-                onSelect={setSelectedVersionId}
-                selectedVersionId={selectedVersionId}
-                versions={packageDetail.versions}
-              />
-            ) : (
-              <p className="mt-8 text-sm font-semibold text-mist-300">
-                No indexed versions
+          </div>
+
+          <div className="flex flex-col border-t border-[var(--hairline)] bg-ink-800 p-6 sm:p-8 lg:border-l lg:border-t-0">
+            <div>
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="text-sm font-semibold text-mist-100">
+                  Add it to a project
+                </h2>
+                {metadata?.latestVersion && (
+                  <code className="font-mono text-[0.68rem] text-mist-600">
+                    latest {metadata.latestVersion}
+                  </code>
+                )}
+              </div>
+              <pre className="mt-4 overflow-x-auto border border-[var(--hairline-strong)] bg-ink-950 p-4 font-mono text-sm text-signal">
+                <code>{metadata?.installCommand ?? `npm install ${packageDetail.name}`}</code>
+              </pre>
+              <p className="mt-3 text-xs leading-5 text-mist-600">
+                Import and API shapes differ by package. Use the package&apos;s
+                documentation link above for its maintained usage examples.
               </p>
+            </div>
+
+            {isGraphIndexed ? (
+              <div className="mt-8 border-t border-[var(--hairline)] pt-7">
+                <p className="text-sm font-semibold text-mist-100">
+                  Choose an indexed release
+                </p>
+                <p className="mt-2 text-sm leading-6 text-mist-500">
+                  Every dependency answer below starts from this exact version.
+                </p>
+                <VersionSelector
+                  onSelect={setSelectedVersionId}
+                  selectedVersionId={selectedVersionId}
+                  versions={packageDetail.versions}
+                />
+              </div>
+            ) : (
+              <div className="mt-8 border-t border-[var(--hairline)] pt-7">
+                <p className="text-sm font-semibold text-mist-100">
+                  Package guide available
+                </p>
+                <p className="mt-2 text-sm leading-6 text-mist-500">
+                  {graphStatus === "unavailable"
+                    ? "Ripple could not check graph coverage right now. Package information is still available from npm."
+                    : "This package is discoverable, but its releases are not part of Ripple’s bounded graph snapshot yet."}
+                </p>
+              </div>
             )}
           </div>
         </div>
       </section>
 
-      {selectedVersionId !== "" && (
+      {isGraphIndexed && selectedVersionId !== "" && (
         <AnalysisGuide selectedVersionId={selectedVersionId} />
       )}
 
-      <section
-        aria-labelledby="dependencies-heading"
-        className="border border-[var(--hairline)] bg-ink-850 p-6 sm:p-8 lg:p-10"
-      >
+      {!isGraphIndexed && (
+        <CatalogOnlyState
+          graphStatus={graphStatus}
+          packageName={packageDetail.name}
+          scope={packageState.response.meta.scope}
+        />
+      )}
+
+      {isGraphIndexed && (
+        <section
+          aria-labelledby="dependencies-heading"
+          className="border border-[var(--hairline)] bg-ink-850 p-6 sm:p-8 lg:p-10"
+        >
         <SectionHeader
           description="This release depends on:"
           meta={
@@ -418,12 +504,14 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
               </ul>
             </div>
           ))}
-      </section>
+        </section>
+      )}
 
-      <section
-        aria-labelledby="impact-heading"
-        className="border border-[var(--hairline)] bg-ink-850 p-6 sm:p-8 lg:p-10"
-      >
+      {isGraphIndexed && (
+        <section
+          aria-labelledby="impact-heading"
+          className="border border-[var(--hairline)] bg-ink-850 p-6 sm:p-8 lg:p-10"
+        >
         <SectionHeader
           description="Who depends on this exact release?"
           id="impact-heading"
@@ -451,9 +539,10 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
         {selectedVersionId !== "" && impactState.status === "success" && (
           <ImpactResults impact={impactState.response.data.impact} />
         )}
-      </section>
+        </section>
+      )}
 
-      {selectedVersionId !== "" && (
+      {isGraphIndexed && selectedVersionId !== "" && (
         <ExplainConnection
           key={selectedVersionId}
           sourceVersionId={selectedVersionId}
@@ -465,6 +554,82 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
         />
       )}
     </div>
+  );
+}
+
+function CatalogOnlyState({
+  graphStatus,
+  packageName,
+  scope,
+}: {
+  graphStatus: "indexed" | "not-indexed" | "unavailable";
+  packageName: string;
+  scope: string;
+}) {
+  return (
+    <section
+      aria-labelledby="catalog-only-heading"
+      className="border border-[var(--hairline)] bg-ink-850 p-6 sm:p-8 lg:p-10"
+    >
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-center">
+        <div>
+          <h2
+            className="text-2xl font-semibold tracking-[-0.03em] text-mist-100 sm:text-3xl"
+            id="catalog-only-heading"
+          >
+            Package found. Graph analysis has a narrower scope.
+          </h2>
+          <p className="mt-4 max-w-xl text-sm leading-6 text-mist-500">
+            Ripple can explain what <code className="text-mist-200">{packageName}</code>{" "}
+            is and where to start. Dependencies, downstream impact, and paths
+            require exact versions already indexed in CognoDB.
+          </p>
+          <p className="mt-5 font-mono text-[0.68rem] text-mist-600">
+            {graphStatus === "unavailable"
+              ? "Graph coverage could not be checked during this request."
+              : scope}
+          </p>
+        </div>
+
+        <div className="border-y border-[var(--hairline)] py-6">
+          <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_3rem_minmax(0,1fr)_3rem_minmax(0,1fr)] sm:items-center">
+            <div>
+              <span className="block font-mono text-[0.62rem] uppercase tracking-[0.1em] text-signal">
+                available
+              </span>
+              <strong className="mt-2 block text-sm text-mist-100">npm package guide</strong>
+              <span className="mt-1 block text-xs leading-5 text-mist-600">
+                purpose, latest release, install command, official links
+              </span>
+            </div>
+            <svg aria-hidden="true" className="hidden h-4 w-full text-mist-700 sm:block" fill="none" viewBox="0 0 48 16">
+              <path d="M1 8h42m-5-5 5 5-5 5" stroke="currentColor" />
+            </svg>
+            <div>
+              <span className="block font-mono text-[0.62rem] uppercase tracking-[0.1em] text-mist-600">
+                boundary
+              </span>
+              <strong className="mt-2 block text-sm text-mist-100">exact version required</strong>
+              <span className="mt-1 block text-xs leading-5 text-mist-600">
+                analysis never guesses from a package name
+              </span>
+            </div>
+            <svg aria-hidden="true" className="hidden h-4 w-full text-mist-700 sm:block" fill="none" viewBox="0 0 48 16">
+              <path d="M1 8h42m-5-5 5 5-5 5" stroke="currentColor" />
+            </svg>
+            <div>
+              <span className="block font-mono text-[0.62rem] uppercase tracking-[0.1em] text-amber">
+                not available
+              </span>
+              <strong className="mt-2 block text-sm text-mist-100">dependency analysis</strong>
+              <span className="mt-1 block text-xs leading-5 text-mist-600">
+                only for releases inside the bounded graph snapshot
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 

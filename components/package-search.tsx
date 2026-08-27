@@ -6,7 +6,7 @@ import type { PackageSearchResult } from "@/lib/domain/packages";
 
 interface SearchResponse {
   data: { packages: PackageSearchResult[] };
-  meta: { scope: string };
+  meta: { catalogScope?: string; scope: string };
 }
 
 interface ErrorResponse {
@@ -73,10 +73,11 @@ export function PackageSearch() {
           className="text-xl font-semibold tracking-[-0.025em] text-mist-100"
           id="search-heading"
         >
-          Find an indexed package
+          Search the npm package catalog
         </h2>
         <p className="mt-2 text-sm leading-6 text-mist-500">
-          Select a package, then choose the exact release you want to inspect.
+          Find any public npm package. Ripple marks which results have
+          exact-version graph analysis available.
         </p>
       </div>
 
@@ -90,7 +91,7 @@ export function PackageSearch() {
           id="package-query"
           maxLength={100}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="ajv, @hapi/hoek, @babel/core"
+          placeholder="Try react, ajv, or @babel/core"
           type="search"
           value={query}
         />
@@ -106,15 +107,20 @@ export function PackageSearch() {
       <div aria-live="polite" className="mt-5 min-h-28">
         {state.status === "idle" && (
           <div className="border border-[var(--hairline)] bg-ink-950 px-5 py-5">
-            <div className="flex flex-wrap items-center gap-3 font-mono text-xs text-mist-300">
-              <span>Package</span>
-              <span className="text-signal">→</span>
-              <span>Exact version</span>
-              <span className="text-signal">→</span>
-              <span>Dependency truth</span>
+            <div className="flex flex-wrap items-center gap-3 text-xs text-mist-300">
+              <span className="font-mono">npm catalog</span>
+              <svg aria-hidden="true" className="h-3 w-8 text-mist-700" fill="none" viewBox="0 0 32 12">
+                <path d="M1 6h27m-4-4 4 4-4 4" stroke="currentColor" />
+              </svg>
+              <span className="font-mono">package guide</span>
+              <svg aria-hidden="true" className="h-3 w-8 text-signal" fill="none" viewBox="0 0 32 12">
+                <path d="M1 6h27m-4-4 4 4-4 4" stroke="currentColor" />
+              </svg>
+              <span className="font-mono">indexed graph</span>
             </div>
             <p className="mt-4 text-sm leading-6 text-mist-600">
-              Analysis never begins from a package-level dependency guess.
+              Every public package is discoverable. Dependency traversal begins
+              only when Ripple has indexed an exact release.
             </p>
           </div>
         )}
@@ -122,7 +128,7 @@ export function PackageSearch() {
         {state.status === "loading" && (
           <div className="space-y-3" role="status">
             <p className="font-mono text-xs text-mist-500">
-              searching the indexed snapshot…
+              searching the public npm catalog…
             </p>
             <div className="h-16 border border-[var(--hairline)] bg-ink-800" />
             <div className="h-16 border border-[var(--hairline)] bg-ink-800" />
@@ -130,7 +136,7 @@ export function PackageSearch() {
         )}
 
         {state.status === "error" && (
-          <div className="border-l-2 border-l-rose bg-rose/[0.06] px-5 py-4">
+          <div className="border border-rose/30 bg-rose/[0.06] px-5 py-4">
             <p className="text-sm font-semibold text-rose">Search unavailable</p>
             <p className="mt-1 text-sm leading-6 text-mist-500">{state.message}</p>
           </div>
@@ -140,11 +146,10 @@ export function PackageSearch() {
           (state.response.data.packages.length === 0 ? (
             <div className="border border-[var(--hairline)] bg-ink-950 px-5 py-5">
               <p className="text-sm font-semibold text-mist-100">
-                No indexed package found
+                No public package found
               </p>
               <p className="mt-1 text-sm leading-6 text-mist-500">
-                Try another identity. Ripple is a curated snapshot, not the full
-                npm ecosystem.
+                Check the package spelling or try a broader search term.
               </p>
             </div>
           ) : (
@@ -157,31 +162,50 @@ export function PackageSearch() {
                 {state.response.data.packages.map((packageResult) => (
                   <li className="border-b border-[var(--hairline)]" key={packageResult.name}>
                     <Link
-                      className="group flex items-center justify-between gap-4 px-1 py-4 transition-colors hover:bg-ink-800"
+                      className="group grid gap-3 px-4 py-5 transition-colors hover:bg-ink-800 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
                       href={packageHref(packageResult.name)}
                     >
-                      <span className="min-w-0 px-3">
-                        <span className="block break-all font-mono text-sm font-semibold text-mist-100 transition-colors group-hover:text-signal">
-                          {packageResult.name}
+                      <span className="min-w-0">
+                        <span className="flex flex-wrap items-center gap-2.5">
+                          <span className="break-all font-mono text-sm font-semibold text-mist-100 transition-colors group-hover:text-signal">
+                            {packageResult.name}
+                          </span>
+                          <span
+                            className={`border px-2 py-1 font-mono text-[0.6rem] uppercase tracking-[0.08em] ${
+                              packageResult.graphStatus === "indexed"
+                                ? "border-signal/40 bg-signal/[0.07] text-signal"
+                                : "border-[var(--hairline)] text-mist-600"
+                            }`}
+                          >
+                            {packageResult.graphStatus === "indexed"
+                              ? `${packageResult.indexedVersionCount} graph version${packageResult.indexedVersionCount === 1 ? "" : "s"}`
+                              : packageResult.graphStatus === "unavailable"
+                                ? "graph status unavailable"
+                                : "npm catalog"}
+                          </span>
                         </span>
-                        <span className="mt-1 block font-mono text-[0.7rem] text-mist-600">
-                          {packageResult.indexedVersionCount} indexed version
-                          {packageResult.indexedVersionCount === 1 ? "" : "s"}
-                        </span>
+                        {packageResult.description && (
+                          <span className="mt-2 line-clamp-2 block text-sm leading-6 text-mist-500">
+                            {packageResult.description}
+                          </span>
+                        )}
                       </span>
-                      <span
-                        aria-hidden="true"
-                        className="mr-3 shrink-0 font-mono text-mist-600 transition-colors group-hover:text-signal"
-                      >
-                        →
+                      <span className="flex shrink-0 items-center gap-3 font-mono text-[0.68rem] text-mist-600">
+                        {packageResult.latestVersion && (
+                          <span>latest {packageResult.latestVersion}</span>
+                        )}
+                        <svg aria-hidden="true" className="h-4 w-5 transition-colors group-hover:text-signal" fill="none" viewBox="0 0 20 16">
+                          <path d="M1 8h16m-5-5 5 5-5 5" stroke="currentColor" />
+                        </svg>
                       </span>
                     </Link>
                   </li>
                 ))}
               </ul>
-              <p className="mt-4 font-mono text-[0.7rem] text-mist-600">
-                {state.response.meta.scope}
-              </p>
+              <div className="mt-4 space-y-1 font-mono text-[0.68rem] text-mist-600">
+                <p>{state.response.meta.catalogScope}</p>
+                <p>Graph badges: {state.response.meta.scope}</p>
+              </div>
             </div>
           ))}
       </div>

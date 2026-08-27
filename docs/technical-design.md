@@ -212,6 +212,30 @@ The H0 technical spike passed against the real CognoDB c0 instance. It verified:
 
 H0 data is temporary. The spike uses namespaced identities plus the `RippleGraphSpike` label and `spikeId: "ripple-graph-spike-v1"`, then removes those entities in a `finally` block. `npm run graph:cleanup-spike` is the dedicated recovery command for historical H0 residue; it previews the exact scope and preserves all `rippleDataset: "ripple-p0"` entities.
 
+## Amendment 1 — the public npm catalog
+
+Recorded after the P0 freeze, so the freeze is not silently broken.
+
+**Change.** A second read source was added: the public npm registry supplies package
+identity, description, latest version and official links. `PackageService` receives it as
+an optional constructor dependency and merges it with graph results for display.
+
+**Why.** Search over a 426-package snapshot returned nothing for almost every real query.
+That failed as a product — a bounded tool looked like a broken one — and it hid the very
+boundary the design is built to make explicit.
+
+**What the freeze still holds.** The registry contributes no dependency edge, hop count or
+path. Every traversal answer still originates from exact Versions inside the snapshot, and
+the invariants below are unchanged. The registry is a display-layer catalog; the graph
+remains the only source of dependency truth.
+
+**Boundary made explicit.** Every package now carries `graphStatus`: `indexed`,
+`not-indexed`, or `unavailable`. The two sources are fetched concurrently and fail
+independently; all four failure combinations are covered by tests.
+
+**Still out of scope:** vulnerability, license, popularity and package-quality analysis, and
+any use of registry data inside a traversal.
+
 ## Intentionally out of scope
 
 The following are not part of this design phase or P0 implementation scope:
@@ -224,6 +248,7 @@ The following are not part of this design phase or P0 implementation scope:
 - traversal that substitutes every Version of a Package for one exact Version;
 - dependency mutation through public APIs;
 - vulnerability, license, popularity, or package-quality analysis;
+- registry data participating in any traversal, hop count, or path (see Amendment 1);
 - authentication, authorization, tenancy, and billing;
 - live npm synchronization or change-data capture;
 - caching and performance targets not supported by measurements;
