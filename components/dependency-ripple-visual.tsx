@@ -1,161 +1,209 @@
-// The homepage's authored focal illustration. One source release, its three
-// resolved targets, and the requirement declared on each edge — drawn in a
-// single accent so the diagram reads as an instrument trace, not decoration.
-//
-// The requirement sits inside its target card rather than floating on the
-// curve: an edge label overlapping its own edge is unreadable at any size.
-const SOURCE = "ajv@8.20.0";
+/*
+ * The homepage's authored focal illustration: Ripple's graph model itself,
+ * not one worked example.
+ *
+ *   (:Package)-[:HAS_VERSION]->(:Version)-[:DEPENDS_ON { requirement }]->(:Version)
+ *
+ * The argument is carried by the drawing rather than a caption. One package
+ * owns three indexed versions, but only the selected one resolves dependency
+ * edges; the other two show faded stubs, because their dependency truth is
+ * their own and is never merged into the package.
+ */
 
-const TARGETS = [
-  {
-    edge: "M 236 208 C 306 208, 322 84, 392 84",
-    requirement: "^3.0.1",
-    target: "fast-uri@3.1.6",
-    y: 84,
-  },
-  {
-    edge: "M 236 208 C 306 208, 322 208, 392 208",
-    requirement: "^1.0.0",
-    target: "json-schema-traverse@1.0.0",
-    y: 208,
-  },
-  {
-    edge: "M 236 208 C 306 208, 322 332, 392 332",
-    requirement: "^2.0.2",
-    target: "require-from-string@2.0.2",
-    y: 332,
-  },
+const VERSIONS = [
+  { label: "version", selected: false, x: 92 },
+  { label: "exact version", selected: true, x: 261 },
+  { label: "version", selected: false, x: 430 },
 ] as const;
+
+const DEPENDENCIES = [
+  { edge: "M 320 244 C 320 302, 246 302, 246 348", x: 182 },
+  { edge: "M 320 244 C 320 302, 466 302, 466 348", x: 402 },
+] as const;
+
+const VERSION_WIDTH = 118;
+const DEPENDENCY_WIDTH = 128;
 
 export function DependencyRippleVisual() {
   return (
     <figure
-      aria-label="Diagram: ajv@8.20.0 resolves three exact dependency versions, each carrying its declared requirement"
+      aria-label="Diagram of Ripple's graph model: one Package owns several indexed Versions through HAS_VERSION, and only the selected exact Version resolves DEPENDS_ON edges, each carrying its declared requirement"
       className="overflow-hidden border border-[var(--hairline)] bg-ink-850"
       role="img"
     >
       <figcaption className="flex items-center justify-between border-b border-[var(--hairline)] px-5 py-3 font-mono text-[0.7rem] tracking-wide text-mist-600">
         <span className="flex items-center gap-2">
           <span className="size-1.5 bg-signal" />
-          dependency trace
+          graph model
         </span>
-        <span>root-origin edges</span>
+        <span>exact-version traversal</span>
       </figcaption>
 
       <svg
         className="block w-full"
         role="presentation"
-        viewBox="0 0 640 416"
+        viewBox="0 0 640 430"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {TARGETS.map((item) => (
-          <g key={`${item.target}-edge`}>
+        {/* HAS_VERSION — ownership is structural, so these edges stay static. */}
+        {VERSIONS.map((version) => (
+          <path
+            d={`M 320 80 C 320 130, ${version.x + VERSION_WIDTH / 2} 130, ${
+              version.x + VERSION_WIDTH / 2
+            } 190`}
+            fill="none"
+            key={`edge-${version.x}`}
+            stroke="var(--hairline-strong)"
+            strokeWidth="1"
+          />
+        ))}
+
+        {/* DEPENDS_ON — traversal, so these carry the moving signal. */}
+        {DEPENDENCIES.map((dependency) => (
+          <g key={`dep-${dependency.x}`}>
             <path
-              d={item.edge}
+              d={dependency.edge}
               fill="none"
               stroke="var(--color-signal)"
-              strokeOpacity="0.16"
+              strokeOpacity="0.18"
               strokeWidth="1"
             />
             <path
               className="edge-flow"
-              d={item.edge}
+              d={dependency.edge}
               fill="none"
               stroke="var(--color-signal)"
-              strokeOpacity="0.8"
+              strokeOpacity="0.85"
               strokeWidth="1.25"
             />
           </g>
         ))}
 
-        {/* Source release. A stroke-only ring marks selection; a filled slab
-            would read as a highlighter rather than an instrument cursor. */}
+        {/* Unselected versions keep their own edges — shown, not traversed. */}
+        {VERSIONS.filter((version) => !version.selected).map((version) => (
+          <path
+            d={`M ${version.x + VERSION_WIDTH / 2} 244 V 300`}
+            key={`stub-${version.x}`}
+            stroke="var(--hairline-strong)"
+            strokeDasharray="3 5"
+            strokeWidth="1"
+          />
+        ))}
+
+        {/* Relationship names, in the left margin so no label sits on an edge. */}
+        <text fill="var(--color-mist-600)" fontFamily="var(--font-mono)" fontSize="11" x="14" y="140">
+          HAS_VERSION
+        </text>
+        <text fill="var(--color-signal)" fontFamily="var(--font-mono)" fontSize="11" x="14" y="298">
+          DEPENDS_ON
+        </text>
+        <text fill="var(--color-mist-600)" fontFamily="var(--font-mono)" fontSize="11" x="14" y="313">
+          {"{ requirement }"}
+        </text>
+
+        {/* Package identity layer. */}
         <g>
           <rect
-            className="node-breathe"
-            fill="none"
-            height="92"
-            stroke="var(--color-signal)"
-            strokeWidth="1"
-            style={{ transformOrigin: "134px 208px" }}
-            width="214"
-            x="27"
-            y="162"
-          />
-          <rect
             fill="var(--color-ink-800)"
-            height="72"
-            stroke="var(--color-signal)"
-            strokeWidth="1.25"
-            width="196"
-            x="38"
-            y="172"
+            height="52"
+            stroke="var(--hairline-strong)"
+            strokeWidth="1"
+            width="160"
+            x="240"
+            y="28"
           />
-          <text
-            fill="var(--color-mist-600)"
-            fontFamily="var(--font-mono)"
-            fontSize="10"
-            x="54"
-            y="196"
-          >
-            selected release
+          <text fill="var(--color-mist-600)" fontFamily="var(--font-mono)" fontSize="10" x="256" y="48">
+            identity layer
           </text>
-          <text
-            fill="var(--color-signal)"
-            fontFamily="var(--font-mono)"
-            fontSize="15"
-            fontWeight="600"
-            x="54"
-            y="220"
-          >
-            {SOURCE}
+          <text fill="var(--color-mist-100)" fontFamily="var(--font-mono)" fontSize="14" x="256" y="68">
+            package
           </text>
         </g>
 
-        {/* Resolved exact targets, each carrying its own declared requirement. */}
-        {TARGETS.map((item) => (
-          <g key={`${item.target}-node`}>
+        {/* Indexed versions. Only one is under analysis. */}
+        {VERSIONS.map((version) => (
+          <g key={`node-${version.x}`}>
+            {version.selected && (
+              <rect
+                className="node-breathe"
+                fill="none"
+                height="72"
+                stroke="var(--color-signal)"
+                strokeWidth="1"
+                style={{ transformOrigin: "320px 216px" }}
+                width="142"
+                x="249"
+                y="180"
+              />
+            )}
             <rect
               fill="var(--color-ink-800)"
-              height="66"
-              stroke="var(--hairline-strong)"
-              strokeWidth="1"
-              width="222"
-              x="392"
-              y={item.y - 33}
-            />
-            <rect
-              fill="var(--color-signal)"
-              height="66"
-              width="2"
-              x="392"
-              y={item.y - 33}
+              height="52"
+              stroke={version.selected ? "var(--color-signal)" : "var(--hairline-strong)"}
+              strokeWidth={version.selected ? "1.25" : "1"}
+              width={VERSION_WIDTH}
+              x={version.x}
+              y="190"
             />
             <text
               fill="var(--color-mist-600)"
               fontFamily="var(--font-mono)"
               fontSize="10"
-              x="408"
-              y={item.y - 11}
+              x={version.x + 14}
+              y="210"
             >
-              requires {item.requirement}
+              {version.selected ? "selected" : "indexed"}
+            </text>
+            <text
+              fill={version.selected ? "var(--color-signal)" : "var(--color-mist-500)"}
+              fontFamily="var(--font-mono)"
+              fontSize="12"
+              x={version.x + 14}
+              y="230"
+            >
+              {version.label}
+            </text>
+          </g>
+        ))}
+
+        {/* Resolved dependency versions. */}
+        {DEPENDENCIES.map((dependency) => (
+          <g key={`target-${dependency.x}`}>
+            <rect
+              fill="var(--color-ink-800)"
+              height="48"
+              stroke="var(--hairline-strong)"
+              strokeWidth="1"
+              width={DEPENDENCY_WIDTH}
+              x={dependency.x}
+              y="348"
+            />
+            <rect fill="var(--color-signal)" height="48" width="2" x={dependency.x} y="348" />
+            <text
+              fill="var(--color-mist-600)"
+              fontFamily="var(--font-mono)"
+              fontSize="10"
+              x={dependency.x + 14}
+              y="368"
+            >
+              resolved
             </text>
             <text
               fill="var(--color-mist-100)"
               fontFamily="var(--font-mono)"
-              fontSize="12"
-              x="408"
-              y={item.y + 11}
+              fontSize="13"
+              x={dependency.x + 14}
+              y="386"
             >
-              {item.target}
+              version
             </text>
           </g>
         ))}
       </svg>
 
       <p className="border-t border-[var(--hairline)] px-5 py-3.5 text-xs leading-5 text-mist-600">
-        Each line is one declared dependency edge from this exact release. Change
-        the release and the lines change with it.
+        A package owns many indexed versions, but dependency truth belongs to one
+        exact release. Ripple never merges them.
       </p>
     </figure>
   );
