@@ -1,12 +1,15 @@
 # Ripple
 
-**Dependency answers that are true for one exact version — not averaged across a package.**
+**Exact-version npm dependency impact tracer.**
 
-Ripple is a version-level npm dependency explorer backed by a property graph. It answers
-what one published release depends on, which releases depend on it, and why — carrying the
-semver requirement declared at every hop.
+Dependency answers that are true for one exact version — not averaged across a package.
+Ripple attaches every dependency edge to an exact published release, then answers what that
+release depends on, which releases depend on it, and why two releases are connected —
+carrying the semver requirement declared at every hop.
 
-![Ripple homepage](docs/images/01-hero.png)
+**Live demo:** _Add the production URL after deployment._
+
+![Ripple homepage proving why exact versions matter](docs/images/01-hero.png)
 
 ## The problem
 
@@ -51,12 +54,21 @@ that against the live database on every run.
 
 ## What it does
 
-- **Package Search** — find an indexed package identity by name.
-- **Dependency Explorer** — what does this exact release depend on, and under what requirement?
-- **Downstream Impact** — which indexed versions can reach this one, direct and transitive, and how many hops away?
-- **Explain Path** — why are these two exact versions connected?
+Names below match the shipped interface. The homepage lists them as capabilities; the
+package page renders each one as a section.
 
-![Exact-version selector and resolved dependencies for ajv](docs/images/02-ajv-versions.png)
+- **Package Search** — *Look up any public npm package.* Finds any public npm package and
+  marks whether Ripple has indexed it (`indexed`, `not-indexed`, or `unavailable`).
+- **Dependency Explorer** — the **Dependencies** section on a package page. What this exact
+  release depends on, showing the declared range and the exact version it resolved to.
+- **Downstream Impact** — the **Downstream impact** section. Which indexed releases can
+  reach this one, direct and transitive, and how many hops away.
+- **Explain Path** — the **Why are these versions connected?** section. The shortest
+  directed chain between two exact releases, requirement by requirement.
+
+Selecting a different release re-answers all three questions for that release.
+
+![Exact-version selector and release summary for ajv](docs/images/02-ajv-versions.png)
 
 ## See it work
 
@@ -81,6 +93,8 @@ has indexed; it is not an ecosystem-wide blast radius.
 ```
 
 Each label in parentheses is the `requirement` property stored on that edge.
+
+![Four-hop explained path from @babel/core@8.0.1 to picocolors@1.1.1](docs/images/04-explain-path.png)
 
 ## Dataset and limitations
 
@@ -177,9 +191,10 @@ count all Versions                   ~809 ms
 static page, no database             ~3 ms
 ```
 
-A query that reads nothing costs the same as a four-hop traversal, so the cost is the network
-round-trip to the hosted CognoDB instance, not query execution or anything in this codebase.
-Each API request performs one round-trip — there is no N+1 and no per-request handshake.
+A query that reads nothing costs the same as a four-hop traversal, so the dominant cost in
+these measurements is the network round-trip to the hosted CognoDB instance. Most graph
+reads use one query; Explain Path validates both endpoints in parallel before its bounded
+traversal, so it uses two query phases. No result performs a query per returned row.
 
 This is a property of where the database lives, and it bounds what any UI here can feel like
 until results are cached. No performance claim beyond these measurements is made.
@@ -225,7 +240,7 @@ objects never cross the repository boundary.
 
 ## Setup
 
-Requirements: Node.js 20 or newer, npm, and access to a CognoDB instance.
+Requirements: Node.js 20.9 or newer, npm, and access to a CognoDB instance.
 
 ```bash
 npm install
@@ -259,6 +274,18 @@ identity space and cannot touch production nodes; `npm run graph:cleanup-spike` 
 removes only spike residue. deps.dev responses are cached under `scripts/cache/` and ignored
 by Git.
 
+## Deployment
+
+The web application is compatible with Vercel's Node.js runtime and does not require a
+`vercel.json`. Add `COGNODB_URI`, `COGNODB_USER`, and `COGNODB_PASSWORD` as encrypted project
+environment variables for Production and Preview. Do not prefix them with `NEXT_PUBLIC_`.
+
+The hosted database must be reachable from Vercel, support the Bolt URI in `COGNODB_URI`,
+and already contain the verified Ripple snapshot. Run constraints, seed, and verification
+once from a trusted local or CI environment; do not seed during `npm run build` or from an
+application request. The shared driver uses a five-connection pool and bounded connection,
+acquisition, and retry timeouts for serverless instances.
+
 ## Testing
 
 ```bash
@@ -282,8 +309,33 @@ Record mapping is the gnarliest code in the app — hand-unwrapping Neo4j `Node`
 deciding which driver faults mean the database is unavailable. A fake driver exercises all of
 it without a database, including session cleanup when mapping throws.
 
-Route handlers are still not covered by unit tests; `graph:verify` exercises them against the
-live database instead.
+Route handlers are not covered by dedicated HTTP integration tests. Service boundaries,
+response mapping, and Neo4j record mapping are covered by the test suite; `graph:verify`
+validates the database contract directly against the live graph.
+
+## How this was built
+
+AI tools were used throughout this project — scaffolding the Next.js application, iterating
+on the user interface, and general implementation assistance. Commits are batched because
+work was committed at the end of each session rather than continuously.
+
+The following decisions are mine:
+
+- **The Package / Version split.** Modelling `Package` as an identity layer carrying no
+  dependency data, and `Version` as the only place dependency edges live, so that no result
+  can merge two releases. See
+  [Why Package and Version are separate](#why-package-and-version-are-separate).
+- **The root-origin ingestion rule.** Keeping an edge only when its `fromNode` is the root
+  node of that source version's own deps.dev graph. This came from debugging why every path
+  was collapsing into a single hop. See [Ingestion correctness](#ingestion-correctness).
+- **The two-source boundary.** Letting the npm registry supply identity and description
+  while the graph stays the only source of dependency edges, hop counts, and paths — merged
+  for display, never for traversal. See
+  [Two sources, one boundary](#two-sources-one-boundary).
+- **The dataset limitation decisions.** Keeping the snapshot bounded and deterministic, and
+  publishing its gaps — rejected ingests, unexpanded versions, disconnected components —
+  rather than presenting a partial crawl as an ecosystem-wide result. See
+  [Dataset and limitations](#dataset-and-limitations).
 
 ## Scope
 
@@ -297,3 +349,7 @@ not change. `docs/technical-design.md` records the amendment.
 
 The first P1 feature is Version Divergence — a direct comparison between two exact versions
 of one package, which the AJV case above is the argument for.
+
+## License
+
+Released under the [MIT License](LICENSE).
