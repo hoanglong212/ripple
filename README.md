@@ -9,8 +9,8 @@ Ripple attaches every dependency edge to an exact published release, then answer
 release depends on, which releases depend on it, and why two releases are connected —
 carrying the semver requirement declared at every hop.
 
-**Live demo:** [ripple-five-kappa.vercel.app](https://ripple-five-kappa.vercel.app)
-**Demo video:** [two-minute walkthrough](https://drive.google.com/file/d/1yWPaLehMCc3DaE4BlIhZvqbc1jvlBFpq/view?usp=sharing) — switching one release changes every answer on the page.
+- **Live demo:** [ripple-five-kappa.vercel.app](https://ripple-five-kappa.vercel.app)
+- **Demo video:** [two-minute walkthrough](https://drive.google.com/file/d/1yWPaLehMCc3DaE4BlIhZvqbc1jvlBFpq/view?usp=sharing) — switching one release changes every answer on the page.
 
 ![Ripple homepage proving why exact versions matter](docs/images/01-hero.png)
 
