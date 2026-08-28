@@ -1,7 +1,5 @@
 # Ripple product context
 
-<!-- impeccable:product-schema 1 -->
-
 ## Platform
 
 Responsive web application built with Next.js and Tailwind CSS.
@@ -21,7 +19,7 @@ A package name is not enough: different versions of the same package can resolve
 
 ## Operating Context
 
-The primary developer journey is to select an indexed release and inspect its direct dependencies, downstream impact, and an explainable path. A technical reviewer should be able to understand the exact-version premise within 30 seconds by inspecting the AJV comparison and trying a known example.
+The primary developer journey is to select an indexed release and inspect its direct dependencies, downstream impact, and an explainable path. Someone arriving without context should be able to understand the exact-version premise from the AJV comparison alone, before reading any explanation of the model.
 
 ## Capabilities and Constraints
 
