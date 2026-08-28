@@ -1,5 +1,7 @@
 # Ripple
 
+[![CI](https://github.com/hoanglong212/ripple/actions/workflows/ci.yml/badge.svg)](https://github.com/hoanglong212/ripple/actions/workflows/ci.yml)
+
 **Exact-version npm dependency impact tracer.**
 
 Dependency answers that are true for one exact version — not averaged across a package.
