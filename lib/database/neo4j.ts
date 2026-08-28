@@ -8,6 +8,13 @@ const environmentSchema = z.object({
   COGNODB_PASSWORD: z.string().min(1, "COGNODB_PASSWORD is required"),
 });
 
+const serverlessDriverConfig = {
+  connectionAcquisitionTimeout: 8_000,
+  connectionTimeout: 5_000,
+  maxConnectionPoolSize: 5,
+  maxTransactionRetryTime: 5_000,
+} as const;
+
 const globalForNeo4j = globalThis as typeof globalThis & {
   rippleNeo4jDriver?: Driver;
 };
@@ -29,7 +36,10 @@ export function getNeo4jDriver(): Driver {
         environment.COGNODB_USER,
         environment.COGNODB_PASSWORD,
       ),
-      { disableLosslessIntegers: true },
+      {
+        ...serverlessDriverConfig,
+        disableLosslessIntegers: true,
+      },
     );
   }
 
