@@ -369,14 +369,22 @@ function PathResult({ explanation }: { explanation: ExplainPath }) {
               </Link>
             </div>
 
-            <p className="mt-4 max-w-4xl text-sm leading-6 text-mist-500">
-              <code className="text-mist-200">{relationship.fromVersionId}</code>{" "}
-              declared <code className="text-mist-200">{packageNameFromVersionId(relationship.toVersionId)}</code>{" "}
-              with the range <code className="text-signal">{relationship.requirement}</code>.
-              In Ripple&apos;s indexed snapshot, that declaration resolved to{" "}
-              <code className="text-amber">{relationship.toVersionId}</code>. This
-              resolved edge is why these two exact versions are connected.
-            </p>
+            {/*
+              Only the first hop is spelled out in prose. Once the reader knows
+              how to read a hop, repeating the same sentence for every remaining
+              hop adds height without adding information.
+            */}
+            {index === 0 && (
+              <p className="mt-4 max-w-4xl text-sm leading-6 text-mist-500">
+                <code className="text-mist-200">{relationship.fromVersionId}</code>{" "}
+                declared <code className="text-mist-200">{packageNameFromVersionId(relationship.toVersionId)}</code>{" "}
+                with the range <code className="text-signal">{relationship.requirement}</code>.
+                In Ripple&apos;s indexed snapshot, that declaration resolved to{" "}
+                <code className="text-amber">{relationship.toVersionId}</code>. Every
+                hop below reads the same way: a declared range on the left, the
+                exact release it resolved to on the right.
+              </p>
+            )}
           </li>
         ))}
       </ol>
