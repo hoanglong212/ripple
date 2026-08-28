@@ -181,23 +181,23 @@ and only a double failure surfaces an error. All four combinations are covered b
 
 ## Measured latency
 
-The H0 spike established query compatibility, not performance. These are the first real
-numbers, measured against the live instance:
+The H0 spike established query compatibility, not performance. A production smoke-test run
+on 28 August 2026 measured these end-to-end response times against the public Vercel alias:
 
-```text
-RETURN 1  (touches no data)          ~809 ms
-count all Versions                   ~809 ms
-4-hop impact traversal               ~812 ms
-static page, no database             ~3 ms
-```
+| Request | Observed response time |
+| --- | ---: |
+| Homepage | 1,076 ms |
+| AJV package page | 969 ms |
+| Dataset API | 1,035 ms |
+| `ajv@8.20.0` Version API | 659 ms |
+| `@hapi/hoek@11.0.7` impact API | 450 ms |
+| Four-hop Babel → picocolors path API | 661 ms |
 
-A query that reads nothing costs the same as a four-hop traversal, so the dominant cost in
-these measurements is the network round-trip to the hosted CognoDB instance. Most graph
-reads use one query; Explain Path validates both endpoints in parallel before its bounded
-traversal, so it uses two query phases. No result performs a query per returned row.
-
-This is a property of where the database lives, and it bounds what any UI here can feel like
-until results are cached. No performance claim beyond these measurements is made.
+These are single-request observations from one client, not a load test, percentile, or SLA.
+They include internet transit, Vercel execution, and the hosted CognoDB round-trip, and will
+vary with region and cold starts. Most graph reads use one query; Explain Path validates
+both endpoints in parallel before its bounded traversal, so it uses two query phases. No
+result performs a query per returned row.
 
 ## Ingestion correctness
 

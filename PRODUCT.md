@@ -8,8 +8,8 @@ Responsive web application built with Next.js and Tailwind CSS.
 
 ## Users
 
-- Recruiters evaluating the technical depth and product thinking of an internship submission.
-- Developers investigating how one exact npm release depends on, affects, or connects to another exact release.
+- Primary: developers investigating how one exact npm release depends on, affects, or connects to another exact release.
+- Secondary: technical reviewers evaluating the graph modelling, ingestion correctness, and product reasoning behind the implementation.
 
 ## Product Purpose
 
@@ -21,7 +21,7 @@ A package name is not enough: different versions of the same package can resolve
 
 ## Operating Context
 
-The primary recruiter journey should be understandable within 30 seconds: see the exact-version premise, inspect the AJV comparison, try a known example, and understand the three supported analysis questions. The package page is the working developer tool for selecting an indexed release and inspecting its direct dependencies, downstream impact, and an explainable path.
+The primary developer journey is to select an indexed release and inspect its direct dependencies, downstream impact, and an explainable path. A technical reviewer should be able to understand the exact-version premise within 30 seconds by inspecting the AJV comparison and trying a known example.
 
 ## Capabilities and Constraints
 
