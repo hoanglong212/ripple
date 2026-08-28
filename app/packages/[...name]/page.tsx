@@ -4,11 +4,23 @@ import { PackageDetailView } from "@/components/package-detail";
 
 export default async function PackagePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ name: string[] }>;
+  searchParams: Promise<{
+    target?: string | string[];
+    version?: string | string[];
+  }>;
 }) {
   const { name } = await params;
+  const query = await searchParams;
   const packageName = name.map(decodeURIComponent).join("/");
+  const initialVersionId = Array.isArray(query.version)
+    ? query.version[0]
+    : query.version;
+  const initialExplainTarget = Array.isArray(query.target)
+    ? query.target[0]
+    : query.target;
 
   return (
     <main className="min-h-screen bg-ink-900">
@@ -34,7 +46,11 @@ export default async function PackagePage({
       </header>
 
       <div className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 sm:py-14 lg:px-12">
-        <PackageDetailView packageName={packageName} />
+        <PackageDetailView
+          initialExplainTarget={initialExplainTarget}
+          initialVersionId={initialVersionId}
+          packageName={packageName}
+        />
         <div className="mt-12">
           <DatasetTransparency compact />
         </div>

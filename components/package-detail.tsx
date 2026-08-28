@@ -53,6 +53,48 @@ function apiPath(prefix: string, identity: string): string {
   return `${prefix}/${identity.split("/").map(encodeURIComponent).join("/")}`;
 }
 
+function packageVersionHref(packageName: string, versionId: string): string {
+  const packagePath = packageName.split("/").map(encodeURIComponent).join("/");
+  return `/packages/${packagePath}?version=${encodeURIComponent(versionId)}`;
+}
+
+const DEPENDENCIES_PER_PAGE = 8;
+
+/*
+ * Divergence counts are verified by hand against the indexed snapshot for the
+ * curated demo packages. Every other multi-release package gets the neutral
+ * prompt, because Ripple does not resolve a second release to count the
+ * difference — the claim would not be backed by anything on the page.
+ */
+const CURATED_DIVERGENCE: Record<string, number> = {
+  ajv: 3,
+};
+
+function divergenceMessage(
+  packageName: string,
+  selectedVersionId: string,
+  versions: readonly { id: string }[],
+  dependencyCount: number,
+): string | null {
+  const otherVersions = versions.filter(
+    (version) => version.id !== selectedVersionId,
+  );
+  if (otherVersions.length === 0 || dependencyCount === 0) {
+    return null;
+  }
+
+  if (otherVersions.length > 1) {
+    return `${otherVersions.length} other indexed releases can resolve a different dependency set. Switch releases to compare.`;
+  }
+
+  const divergentCount = CURATED_DIVERGENCE[packageName];
+  if (divergentCount !== undefined && divergentCount <= dependencyCount) {
+    return `${otherVersions[0].id} resolves ${divergentCount} of these ${dependencyCount} dependencies differently. Switch releases to compare.`;
+  }
+
+  return `${otherVersions[0].id} can resolve a different dependency set. Switch releases to compare.`;
+}
+
 async function readError(response: Response): Promise<{
   code?: string;
   message: string;
@@ -66,7 +108,15 @@ async function readError(response: Response): Promise<{
   };
 }
 
-export function PackageDetailView({ packageName }: { packageName: string }) {
+export function PackageDetailView({
+  initialExplainTarget,
+  initialVersionId,
+  packageName,
+}: {
+  initialExplainTarget?: string;
+  initialVersionId?: string;
+  packageName: string;
+}) {
   const [packageState, setPackageState] = useState<PackageState>({
     status: "loading",
   });
@@ -77,6 +127,7 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
   const [impactState, setImpactState] = useState<ImpactState>({
     status: "idle",
   });
+  const [dependencyPage, setDependencyPage] = useState(1);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -100,7 +151,13 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
 
         const payload: PackageResponse = await response.json();
         setPackageState({ status: "success", response: payload });
-        setSelectedVersionId(payload.data.package.versions[0]?.id ?? "");
+        const requestedVersion = payload.data.package.versions.find(
+          (version) => version.id === initialVersionId,
+        );
+        setDependencyPage(1);
+        setSelectedVersionId(
+          requestedVersion?.id ?? payload.data.package.versions[0]?.id ?? "",
+        );
       } catch (error: unknown) {
         if (!controller.signal.aborted) {
           setPackageState({
@@ -116,7 +173,7 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
 
     void loadPackage();
     return () => controller.abort();
-  }, [packageName]);
+  }, [initialVersionId, packageName]);
 
   useEffect(() => {
     if (selectedVersionId === "") {
@@ -212,13 +269,47 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
 
   if (packageState.status === "loading") {
     return (
-      <div className="space-y-6" role="status">
-        <div className="flex items-center gap-3 text-sm font-semibold text-mist-500">
-          <span className="size-2 bg-signal" />
-          Loading package guide and graph coverage…
-        </div>
-        <div className="h-64 border border-[var(--hairline)] bg-ink-850" />
-        <div className="h-80 border border-[var(--hairline)] bg-ink-850" />
+      <div aria-label="Loading package data" className="space-y-6" role="status">
+        <section className="overflow-hidden border border-[var(--hairline)] bg-ink-850">
+          <div className="grid lg:grid-cols-[minmax(0,1fr)_22rem]">
+            <div className="p-6 sm:p-9 lg:p-10">
+              <h1 className="break-all font-mono text-4xl font-semibold tracking-[-0.04em] text-mist-100 sm:text-6xl">
+                {packageName}
+              </h1>
+              <p className="mt-4 flex items-center gap-2 text-sm text-mist-600">
+                <span className="size-1.5 bg-signal" />
+                Loading package details…
+              </p>
+            </div>
+            <div className="border-t border-[var(--hairline)] bg-ink-800 p-6 sm:p-8 lg:border-l lg:border-t-0">
+              <label className="text-sm font-semibold text-mist-100" htmlFor="loading-version-selector">
+                Selected exact release
+              </label>
+              <select
+                className="mt-3 w-full border border-[var(--hairline)] bg-ink-900 px-4 py-3.5 font-mono text-sm text-mist-600"
+                disabled
+                id="loading-version-selector"
+              >
+                <option>Loading indexed versions…</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section className="border border-[var(--hairline)] bg-ink-850 p-6 sm:p-8">
+          <h2 className="text-2xl font-semibold text-mist-100">Dependencies</h2>
+          <p className="mt-2 text-sm text-mist-600">Loading outgoing dependency edges…</p>
+          <div className="mt-6 space-y-3">
+            <div className="h-16 bg-ink-800" />
+            <div className="h-16 bg-ink-800" />
+          </div>
+        </section>
+
+        <section className="border border-[var(--hairline)] bg-ink-850 p-6 sm:p-8">
+          <h2 className="text-2xl font-semibold text-mist-100">Downstream impact</h2>
+          <p className="mt-2 text-sm text-mist-600">Tracing incoming dependency paths…</p>
+          <div className="mt-6 h-20 bg-ink-800" />
+        </section>
       </div>
     );
   }
@@ -249,6 +340,28 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
   const metadata = packageDetail.metadata;
   const graphStatus = packageDetail.graphStatus ?? "indexed";
   const isGraphIndexed = graphStatus === "indexed" && versionCount > 0;
+  const directDependencies =
+    versionState.status === "success"
+      ? versionState.response.data.version.dependencies
+      : [];
+  const dependencyPageCount = Math.max(
+    1,
+    Math.ceil(directDependencies.length / DEPENDENCIES_PER_PAGE),
+  );
+  const activeDependencyPage = Math.min(dependencyPage, dependencyPageCount);
+  const visibleDependencies = directDependencies.slice(
+    (activeDependencyPage - 1) * DEPENDENCIES_PER_PAGE,
+    activeDependencyPage * DEPENDENCIES_PER_PAGE,
+  );
+  const divergenceNotice =
+    versionState.status === "success"
+      ? divergenceMessage(
+          packageDetail.name,
+          selectedVersionId,
+          packageDetail.versions,
+          directDependencies.length,
+        )
+      : null;
 
   return (
     <div className="space-y-6">
@@ -277,6 +390,52 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
                     : "catalog only"}
               </span>
             </div>
+
+            {isGraphIndexed && (
+              <>
+                <dl className="mt-7 grid border-y border-[var(--hairline)] sm:grid-cols-3">
+                  <div className="py-4 sm:pr-5">
+                    <dd className="font-mono text-2xl font-semibold text-mist-100">
+                      {versionState.status === "success"
+                        ? versionState.response.data.version.dependencies.length
+                        : "—"}
+                    </dd>
+                    <dt className="mt-1 text-xs leading-5 text-mist-600">
+                      direct dependencies
+                    </dt>
+                  </div>
+                  <div className="border-t border-[var(--hairline)] py-4 sm:border-l sm:border-t-0 sm:px-5">
+                    <dd className="font-mono text-2xl font-semibold text-mist-100">
+                      {impactState.status === "success"
+                        ? impactState.response.data.impact.totalReachable
+                        : "—"}
+                    </dd>
+                    <dt className="mt-1 text-xs leading-5 text-mist-600">
+                      releases that depend on this
+                    </dt>
+                  </div>
+                  <div className="border-t border-[var(--hairline)] py-4 sm:border-l sm:border-t-0 sm:px-5">
+                    <dd className="font-mono text-2xl font-semibold text-mist-100">
+                      {versionCount}
+                    </dd>
+                    <dt className="mt-1 text-xs leading-5 text-mist-600">
+                      indexed releases of this package
+                    </dt>
+                  </div>
+                </dl>
+
+                <p className="mt-5 max-w-2xl text-sm leading-6 text-mist-400">
+                  Every answer below is scoped to{" "}
+                  <code className="font-mono text-mist-100">
+                    {selectedVersionId || "the selected release"}
+                  </code>
+                  .{" "}
+                  {versionCount > 1
+                    ? "Switch releases to watch the dependency answer change."
+                    : "Dependency edges belong to this exact release, not to the package name."}
+                </p>
+              </>
+            )}
 
             <div className="mt-9 max-w-3xl border-t border-[var(--hairline)] pt-6">
               <h2 className="text-sm font-semibold text-mist-100">
@@ -336,42 +495,28 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
           </div>
 
           <div className="flex flex-col border-t border-[var(--hairline)] bg-ink-800 p-6 sm:p-8 lg:border-l lg:border-t-0">
-            <div>
-              <div className="flex items-center justify-between gap-4">
-                <h2 className="text-sm font-semibold text-mist-100">
-                  Add it to a project
-                </h2>
-                {metadata?.latestVersion && (
-                  <code className="font-mono text-[0.68rem] text-mist-600">
-                    latest {metadata.latestVersion}
-                  </code>
-                )}
-              </div>
-              <pre className="mt-4 overflow-x-auto border border-[var(--hairline-strong)] bg-ink-950 p-4 font-mono text-sm text-signal">
-                <code>{metadata?.installCommand ?? `npm install ${packageDetail.name}`}</code>
-              </pre>
-              <p className="mt-3 text-xs leading-5 text-mist-600">
-                Import and API shapes differ by package. Use the package&apos;s
-                documentation link above for its maintained usage examples.
-              </p>
-            </div>
-
             {isGraphIndexed ? (
-              <div className="mt-8 border-t border-[var(--hairline)] pt-7">
+              <div>
                 <p className="text-sm font-semibold text-mist-100">
-                  Choose an indexed release
+                  Selected exact release
                 </p>
-                <p className="mt-2 text-sm leading-6 text-mist-500">
-                  Every dependency answer below starts from this exact version.
+                <code className="mt-3 block break-all font-mono text-lg font-semibold text-signal">
+                  {selectedVersionId || "Selecting release…"}
+                </code>
+                <p className="mt-2 text-xs leading-5 text-mist-600">
+                  Change the release to update every answer on this page.
                 </p>
                 <VersionSelector
-                  onSelect={setSelectedVersionId}
+                  onSelect={(versionId) => {
+                    setDependencyPage(1);
+                    setSelectedVersionId(versionId);
+                  }}
                   selectedVersionId={selectedVersionId}
                   versions={packageDetail.versions}
                 />
               </div>
             ) : (
-              <div className="mt-8 border-t border-[var(--hairline)] pt-7">
+              <div>
                 <p className="text-sm font-semibold text-mist-100">
                   Package guide available
                 </p>
@@ -382,13 +527,24 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
                 </p>
               </div>
             )}
+
+            <div className="mt-8 border-t border-[var(--hairline)] pt-6">
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-xs font-semibold text-mist-300">Install</p>
+                {metadata?.latestVersion && (
+                  <code className="font-mono text-[0.65rem] text-mist-700">
+                    npm latest {metadata.latestVersion}
+                  </code>
+                )}
+              </div>
+              <pre className="mt-3 overflow-x-auto border border-[var(--hairline)] bg-ink-950 px-4 py-3 font-mono text-xs text-signal">
+                <code>{metadata?.installCommand ?? `npm install ${packageDetail.name}`}</code>
+              </pre>
+            </div>
           </div>
         </div>
-      </section>
 
-      {isGraphIndexed && selectedVersionId !== "" && (
-        <AnalysisGuide selectedVersionId={selectedVersionId} />
-      )}
+      </section>
 
       {!isGraphIndexed && (
         <CatalogOnlyState
@@ -404,34 +560,20 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
           className="border border-[var(--hairline)] bg-ink-850 p-6 sm:p-8 lg:p-10"
         >
         <SectionHeader
-          description="This release depends on:"
+          description={`What ${selectedVersionId || "this exact release"} needs to run. Each row shows the declared range and the exact version Ripple indexed.`}
           meta={
             versionState.status === "success"
               ? `${versionState.response.data.version.dependencies.length} direct`
               : undefined
           }
           id="dependencies-heading"
-          question="What does this exact release depend on?"
-          title="Dependency Truth"
+          title="Dependencies"
         />
 
-        {selectedVersionId !== "" && (
-          <div className="mt-7 flex flex-col gap-3 border-y border-[var(--hairline)] bg-ink-800 px-4 py-4 text-xs sm:flex-row sm:items-center sm:gap-4">
-            <code className="break-all font-semibold text-mist-100">
-              {selectedVersionId}
-            </code>
-            <span className="shrink-0 font-mono font-semibold text-signal">
-              DEPENDS_ON {"{ requirement }"} →
-            </span>
-            <span className="font-mono text-mist-600">exact Version</span>
-          </div>
-        )}
-
-        {packageDetail.versions.length === 0 && (
-          <StatusCard
-            message="This package currently has no indexed versions."
-            title="No indexed versions"
-          />
+        {divergenceNotice !== null && (
+          <p className="mt-6 border-l-2 border-amber bg-amber/[0.06] px-4 py-3 text-sm leading-6 text-mist-300">
+            {divergenceNotice}
+          </p>
         )}
 
         {selectedVersionId !== "" && versionState.status === "loading" && (
@@ -454,54 +596,117 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
         {selectedVersionId !== "" &&
           versionState.status === "success" &&
           (versionState.response.data.version.dependencies.length === 0 ? (
-            <StatusCard
-              message="This exact version has no outgoing dependency edges in Ripple’s indexed snapshot."
-              title="No direct dependencies"
-            />
+            <div className="mt-6 flex flex-col gap-4 border-y border-[var(--hairline)] py-5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-mist-100">
+                  This release has no indexed outgoing dependencies.
+                </p>
+                <p className="mt-1 text-sm leading-6 text-mist-500">
+                  The interesting question is who depends on it.
+                </p>
+              </div>
+              <Link
+                className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-signal"
+                href="#impact-heading"
+              >
+                View downstream impact
+                <svg aria-hidden="true" className="h-4 w-5" fill="none" viewBox="0 0 20 16">
+                  <path d="M1 8h16m-5-5 5 5-5 5" stroke="currentColor" />
+                </svg>
+              </Link>
+            </div>
           ) : (
             <div className="reveal-up">
-              <DependencyEdgeExample
-                dependency={versionState.response.data.version.dependencies[0]}
-                sourceVersionId={selectedVersionId}
-              />
-              <div className="mt-8 flex items-center justify-between gap-4">
-                <h3 className="text-sm font-semibold text-mist-100">
-                  All direct dependencies
-                </h3>
-                <p className="text-xs text-mist-600">
-                  Resolved from this release
+              <div className="mt-6 flex items-center justify-between gap-4">
+                <h3 className="text-sm font-semibold text-mist-100">Resolved edges</h3>
+                <p aria-live="polite" className="text-xs text-mist-600">
+                  Showing {(activeDependencyPage - 1) * DEPENDENCIES_PER_PAGE + 1}–
+                  {Math.min(
+                    activeDependencyPage * DEPENDENCIES_PER_PAGE,
+                    directDependencies.length,
+                  )}{" "}
+                  of {directDependencies.length}
                 </p>
               </div>
               <ul className="mt-3 divide-y divide-[var(--hairline)] border-y border-[var(--hairline)]">
-                {versionState.response.data.version.dependencies.map(
-                  (dependency) => (
+                {visibleDependencies.map((dependency) => (
                     <li
-                      className="flex min-w-0 items-center justify-between gap-4 py-4"
                       key={`${dependency.dependencyVersionId}\0${dependency.requirement}`}
                     >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <span className="size-2 shrink-0 bg-signal" />
-                        <div className="min-w-0">
-                          <p className="truncate font-mono text-sm font-semibold text-mist-100">
-                            {dependency.dependencyPackageName}
-                          </p>
-                          <p className="mt-1 break-all font-mono text-xs text-mist-600">
-                            {dependency.dependencyVersionId}
-                          </p>
+                      <Link
+                        aria-label={`Open ${dependency.dependencyVersionId}`}
+                        className="group grid min-w-0 gap-4 py-4 transition-colors hover:bg-ink-800 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:px-4"
+                        href={packageVersionHref(
+                          dependency.dependencyPackageName,
+                          dependency.dependencyVersionId,
+                        )}
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          <span className="size-2 shrink-0 bg-signal" />
+                          <div className="min-w-0">
+                            <p className="truncate font-mono text-sm font-semibold text-mist-100 transition-colors group-hover:text-signal">
+                              {dependency.dependencyPackageName}
+                            </p>
+                            <p className="mt-1 break-all font-mono text-xs text-mist-600">
+                              {dependency.dependencyVersionId}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <span className="block text-xs text-mist-600">
-                          requires
+                        <div className="shrink-0 sm:text-right">
+                          <span className="block text-xs text-mist-600">requires</span>
+                          <code className="mt-1 block w-fit border border-[var(--hairline-strong)] bg-signal/10 px-3 py-1.5 text-xs font-semibold text-signal sm:ml-auto">
+                            {dependency.requirement}
+                          </code>
+                        </div>
+                        <span className="flex shrink-0 items-center gap-2 text-xs font-semibold text-mist-600 transition-colors group-hover:text-signal">
+                          Open exact release
+                          <svg aria-hidden="true" className="h-4 w-5" fill="none" viewBox="0 0 20 16">
+                            <path d="M1 8h16m-5-5 5 5-5 5" stroke="currentColor" />
+                          </svg>
                         </span>
-                        <code className="mt-1 block border border-[var(--hairline-strong)] bg-signal/10 px-3 py-1.5 text-xs font-semibold text-signal">
-                          {dependency.requirement}
-                        </code>
-                      </div>
+                      </Link>
                     </li>
-                  ),
-                )}
+                  ))}
               </ul>
+
+              {dependencyPageCount > 1 && (
+                <nav
+                  aria-label="Direct dependencies pagination"
+                  className="mt-5 flex flex-col gap-3 border-t border-[var(--hairline)] pt-5 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <p className="font-mono text-[0.68rem] text-mist-600">
+                    Page {activeDependencyPage} of {dependencyPageCount}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      className="inline-flex min-h-10 items-center justify-center gap-2 border border-[var(--hairline-strong)] px-4 text-xs font-semibold text-mist-300 transition-colors hover:border-signal hover:text-signal disabled:cursor-not-allowed disabled:text-mist-700 disabled:hover:border-[var(--hairline-strong)]"
+                      disabled={activeDependencyPage === 1}
+                      onClick={() => setDependencyPage((page) => Math.max(1, page - 1))}
+                      type="button"
+                    >
+                      <svg aria-hidden="true" className="h-4 w-5" fill="none" viewBox="0 0 20 16">
+                        <path d="M19 8H3m5-5L3 8l5 5" stroke="currentColor" />
+                      </svg>
+                      Previous
+                    </button>
+                    <button
+                      className="inline-flex min-h-10 items-center justify-center gap-2 border border-[var(--hairline-strong)] px-4 text-xs font-semibold text-mist-300 transition-colors hover:border-signal hover:text-signal disabled:cursor-not-allowed disabled:text-mist-700 disabled:hover:border-[var(--hairline-strong)]"
+                      disabled={activeDependencyPage === dependencyPageCount}
+                      onClick={() =>
+                        setDependencyPage((page) =>
+                          Math.min(dependencyPageCount, page + 1),
+                        )
+                      }
+                      type="button"
+                    >
+                      Next
+                      <svg aria-hidden="true" className="h-4 w-5" fill="none" viewBox="0 0 20 16">
+                        <path d="M1 8h16m-5-5 5 5-5 5" stroke="currentColor" />
+                      </svg>
+                    </button>
+                  </div>
+                </nav>
+              )}
             </div>
           ))}
         </section>
@@ -513,10 +718,9 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
           className="border border-[var(--hairline)] bg-ink-850 p-6 sm:p-8 lg:p-10"
         >
         <SectionHeader
-          description="Who depends on this exact release?"
+          description={`Who depends on ${selectedVersionId || "this exact release"}, directly or through another indexed release.`}
           id="impact-heading"
-          question="Who is affected if this release changes?"
-          title="Impact"
+          title="Downstream impact"
         />
 
         {selectedVersionId !== "" && impactState.status === "loading" && (
@@ -544,6 +748,7 @@ export function PackageDetailView({ packageName }: { packageName: string }) {
 
       {isGraphIndexed && selectedVersionId !== "" && (
         <ExplainConnection
+          initialTargetVersionId={initialExplainTarget}
           key={selectedVersionId}
           sourceVersionId={selectedVersionId}
           targetSuggestions={
@@ -630,132 +835,6 @@ function CatalogOnlyState({
         </div>
       </div>
     </section>
-  );
-}
-
-function AnalysisGuide({ selectedVersionId }: { selectedVersionId: string }) {
-  const steps = [
-    {
-      color: "bg-signal/10 text-signal",
-      description: "Outgoing arrows show what this release needs.",
-      label: "Dependencies",
-      path: "source → dependency",
-    },
-    {
-      color: "bg-signal/10 text-signal",
-      description: "Incoming paths show which releases could be affected.",
-      label: "Impact",
-      path: "affected version → source",
-    },
-    {
-      color: "bg-signal/10 text-signal",
-      description: "A chain explains every step between two releases.",
-      label: "Explain Path",
-      path: "source → … → target",
-    },
-  ] as const;
-
-  return (
-    <section
-      aria-labelledby="analysis-guide-heading"
-      className="overflow-hidden border border-[var(--hairline)] bg-ink-950 text-mist-100"
-    >
-      <div className="grid lg:grid-cols-[0.72fr_1.28fr]">
-        <div className="p-6 sm:p-8">
-          <h2
-            className="text-2xl font-semibold tracking-[-0.03em]"
-            id="analysis-guide-heading"
-          >
-            How to read this page
-          </h2>
-          <p className="mt-3 max-w-md text-sm leading-6 text-mist-600">
-            Every section keeps{" "}
-            <code className="font-semibold text-mist-100">{selectedVersionId}</code>{" "}
-            at the center. The direction of the arrows changes the question.
-          </p>
-        </div>
-        <div className="grid border-t border-[var(--hairline)] sm:grid-cols-3 lg:border-l lg:border-t-0">
-          {steps.map((step) => (
-            <div
-              className="border-b border-[var(--hairline)] p-5 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0"
-              key={step.label}
-            >
-              <span className={`inline-flex rounded-full px-2.5 py-1 text-[0.68rem] font-semibold ${step.color}`}>
-                {step.label}
-              </span>
-              <code className="mt-4 block text-[0.68rem] text-mist-500">
-                {step.path}
-              </code>
-              <p className="mt-2 text-xs leading-5 text-mist-500">
-                {step.description}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function DependencyEdgeExample({
-  dependency,
-  sourceVersionId,
-}: {
-  dependency: VersionDetail["dependencies"][number];
-  sourceVersionId: string;
-}) {
-  return (
-    <div className="mt-6 overflow-hidden border border-[var(--hairline)] bg-ink-800">
-      <div className="border-b border-[var(--hairline)] bg-ink-850 px-5 py-4">
-        <h3 className="font-semibold text-mist-100">Worked example: read one edge</h3>
-        <p className="mt-1 text-sm leading-6 text-mist-500">
-          Ripple separates the declared requirement from the exact release it
-          resolved to.
-        </p>
-      </div>
-      <div className="grid gap-4 p-5 sm:grid-cols-[minmax(0,1fr)_10rem_minmax(0,1fr)] sm:items-center">
-        <div className="border border-[var(--hairline)] bg-ink-850 p-4">
-          <p className="text-xs font-medium text-signal">Source release</p>
-          <code className="mt-2 block break-all text-sm font-semibold text-mist-100">
-            {sourceVersionId}
-          </code>
-        </div>
-        <div className="relative flex flex-col items-center justify-center gap-2 py-2">
-          <code className="bg-signal px-3 py-1 text-xs font-semibold text-ink-950">
-            requires {dependency.requirement}
-          </code>
-          <svg
-            aria-hidden="true"
-            className="h-5 w-full text-signal"
-            preserveAspectRatio="none"
-            viewBox="0 0 160 20"
-          >
-            <path
-              className="edge-flow"
-              d="M2 10H150"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeWidth="2"
-            />
-            <path d="M145 5L151 10L145 15" fill="none" stroke="currentColor" strokeWidth="2" />
-          </svg>
-        </div>
-        <div className="border border-[var(--hairline)] bg-ink-850 p-4">
-          <p className="text-xs font-medium text-signal">Resolved exact dependency</p>
-          <code className="mt-2 block break-all text-sm font-semibold text-mist-100">
-            {dependency.dependencyVersionId}
-          </code>
-        </div>
-      </div>
-      <p className="border-t border-[var(--hairline)] px-5 py-4 text-sm leading-6 text-mist-300">
-        Read this as:{" "}
-        <code className="font-semibold text-signal">{sourceVersionId}</code>{" "}
-        declared <code className="font-semibold text-signal">{dependency.requirement}</code>{" "}
-        and resolved to{" "}
-        <code className="font-semibold text-signal">{dependency.dependencyVersionId}</code>.
-      </p>
-    </div>
   );
 }
 
@@ -946,35 +1025,26 @@ function ImpactResults({ impact }: { impact: DownstreamImpact }) {
 function SectionHeader({
   id,
   title,
-  question,
   description,
   meta,
 }: {
   id: string;
   title: string;
-  question: string;
   description: string;
   meta?: string;
 }) {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div>
-        <p
-          className={`text-sm font-medium ${
-            id === "dependencies-heading" ? "text-signal" : "text-signal"
-          }`}
+        <h2
+          className="text-3xl font-semibold tracking-[-0.04em] text-mist-100"
+          id={id}
         >
-          {question}
+          {title}
+        </h2>
+        <p className="mt-2 max-w-2xl text-base leading-6 text-mist-500">
+          {description}
         </p>
-          <h2
-            className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-mist-100"
-            id={id}
-          >
-            {title}
-          </h2>
-          <p className="mt-2 max-w-2xl text-base leading-6 text-mist-500">
-            {description}
-          </p>
       </div>
       {meta && (
         <span className="w-fit border border-[var(--hairline)] px-3 py-1.5 text-xs font-semibold text-mist-500">

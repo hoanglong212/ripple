@@ -16,9 +16,9 @@ const jetBrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ripple — Exact-version npm dependency tracing",
+  title: "Ripple — Exact-version npm dependency impact tracer",
   description:
-    "Understand what changes behind every package version. Trace exact npm releases, their dependencies, and their impact.",
+    "Exact-version npm dependency impact tracer. A package name is not a dependency answer: Ripple traces dependencies, downstream impact, and explained paths from the exact release you ship.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

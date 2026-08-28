@@ -24,6 +24,30 @@ const CAPABILITIES = [
   },
 ] as const;
 
+const HERO_STATS = [
+  { label: "dependencies differ", value: "3 of 4" },
+  { label: "packages indexed", value: "426" },
+  { label: "exact-version dependency edges", value: "636" },
+] as const;
+
+const DEMO_EXAMPLES = [
+  {
+    answer: "Compare AJV releases",
+    href: "/packages/ajv?version=ajv%408.20.0#dependencies-heading",
+    question: "Does a version change the dependency answer?",
+  },
+  {
+    answer: "Trace @hapi/hoek impact",
+    href: "/packages/%40hapi/hoek?version=%40hapi%2Fhoek%4011.0.7#impact-heading",
+    question: "Who is affected if this release changes?",
+  },
+  {
+    answer: "Explain Babel to picocolors",
+    href: "/packages/%40babel/core?version=%40babel%2Fcore%408.0.1&target=picocolors%401.1.1#explain-path",
+    question: "Why are these two releases connected?",
+  },
+] as const;
+
 /*
  * Each glyph depicts the actual shape of its traversal — fan-out, fan-in, and
  * a chain. Monochrome on purpose: the accent marks the release under analysis.
@@ -83,53 +107,90 @@ export default function HomePage() {
           </Link>
           <p className="hidden items-center gap-2 font-mono text-[0.7rem] text-mist-600 sm:flex">
             <span className="size-1.5 bg-signal" />
-            exact-version npm intelligence
+            Exact-version npm dependency impact tracer
           </p>
         </div>
       </header>
 
       {/* Hero ------------------------------------------------------------ */}
       <section className="border-b border-[var(--hairline)]">
-        <div className="mx-auto grid w-full max-w-7xl gap-14 px-5 py-20 sm:px-8 sm:py-24 lg:grid-cols-[1.06fr_0.94fr] lg:items-center lg:gap-16 lg:px-12 lg:py-28">
+        <div className="mx-auto grid w-full max-w-7xl gap-14 px-5 pb-14 pt-16 sm:px-8 sm:pb-16 sm:pt-20 lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:gap-14 lg:px-12 lg:pt-24">
           <div className="reveal-up">
             <p className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-signal">
-              npm dependency impact
+              Exact-version npm dependency impact tracer
             </p>
             <div className="rule-signal mt-4 h-px w-24" />
-            <h1 className="mt-7 max-w-3xl text-balance text-[2.6rem] font-semibold leading-[1.02] tracking-[-0.04em] text-mist-100 sm:text-6xl lg:text-[4.1rem] lg:leading-[0.97]">
-              Understand what changes behind every package version.
+            <h1 className="mt-7 max-w-3xl text-balance text-[2.75rem] font-semibold leading-[1.01] tracking-[-0.04em] text-mist-100 sm:text-6xl lg:text-[4rem] lg:leading-[0.98]">
+              A package name is not a dependency answer.
             </h1>
-            <p className="mt-7 max-w-xl text-base leading-7 text-mist-500 sm:text-lg sm:leading-8">
-              Ripple traces exact npm releases, their dependencies, and their
-              impact — because a package name does not tell the whole story.
+            <p className="mt-7 max-w-2xl text-base leading-7 text-mist-500 sm:text-lg sm:leading-8">
+              <code className="font-mono text-[0.92em] text-mist-200">ajv@6.15.0</code>{" "}
+              and <code className="font-mono text-[0.92em] text-mist-200">ajv@8.20.0</code>{" "}
+              share only one dependency out of four. Ripple traces dependency
+              impact from the exact release you ship.
             </p>
 
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
               <Link
                 className="lift inline-flex h-12 items-center justify-center border border-signal bg-signal px-6 text-sm font-semibold text-ink-950 hover:bg-[var(--color-signal-deep)] sm:w-48"
-                href="/packages/ajv"
+                href="/packages/ajv?version=ajv%408.20.0#dependencies-heading"
               >
-                Try the AJV example
+                Open AJV comparison
               </Link>
               <Link
                 className="lift inline-flex h-12 items-center justify-center border border-[var(--hairline-strong)] px-6 text-sm font-semibold text-mist-300 hover:border-signal hover:text-signal sm:w-48"
-                href="#package-search"
+                href="#graph-model"
               >
-                Search packages
+                How the graph works
               </Link>
             </div>
+
+            <dl className="mt-10 grid border-y border-[var(--hairline)] sm:grid-cols-3">
+              {HERO_STATS.map((stat, index) => (
+                <div
+                  className={`py-4 sm:px-4 ${
+                    index === 0 ? "sm:pl-0" : "border-t border-[var(--hairline)] sm:border-l sm:border-t-0"
+                  }`}
+                  key={stat.label}
+                >
+                  <dd className={`font-mono text-xl font-semibold ${index === 0 ? "text-amber" : "text-mist-100"}`}>
+                    {stat.value}
+                  </dd>
+                  <dt className="mt-1 text-xs leading-5 text-mist-600">
+                    {stat.label}
+                  </dt>
+                </div>
+              ))}
+            </dl>
           </div>
 
           <div className="reveal-up" style={{ animationDelay: "120ms" }}>
-            <DependencyRippleVisual />
+            <VersionDivergenceProof />
           </div>
         </div>
-      </section>
 
-      {/* The argument ---------------------------------------------------- */}
-      <section className="border-b border-[var(--hairline)]">
-        <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 sm:py-28 lg:px-12">
-          <VersionDivergenceProof />
+        <div className="border-t border-[var(--hairline)] bg-ink-950">
+          <div className="mx-auto grid w-full max-w-7xl px-5 sm:px-8 md:grid-cols-3 lg:px-12">
+            {DEMO_EXAMPLES.map((example, index) => (
+              <Link
+                className={`group grid min-h-36 content-between gap-5 py-6 transition-colors hover:bg-ink-850 sm:px-5 ${
+                  index > 0 ? "border-t border-[var(--hairline)] md:border-l md:border-t-0" : ""
+                }`}
+                href={example.href}
+                key={example.question}
+              >
+                <p className="max-w-xs text-sm font-semibold leading-6 text-mist-200">
+                  {example.question}
+                </p>
+                <span className="flex items-center justify-between gap-4 font-mono text-[0.68rem] text-signal">
+                  {example.answer}
+                  <svg aria-hidden="true" className="h-4 w-5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 20 16">
+                    <path d="M1 8h16m-5-5 5 5-5 5" stroke="currentColor" />
+                  </svg>
+                </span>
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -173,6 +234,23 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Graph model ----------------------------------------------------- */}
+      <section className="scroll-mt-16 border-b border-[var(--hairline)] bg-ink-950" id="graph-model">
+        <div className="mx-auto grid w-full max-w-7xl gap-12 px-5 py-20 sm:px-8 sm:py-24 lg:grid-cols-[0.68fr_1.32fr] lg:items-center lg:gap-20 lg:px-12">
+          <div>
+            <h2 className="text-3xl font-semibold tracking-[-0.04em] text-mist-100 sm:text-[2.5rem] sm:leading-[1.08]">
+              The graph starts only after you choose a release.
+            </h2>
+            <p className="mt-5 max-w-md text-base leading-7 text-mist-500">
+              Package is the search identity. Version is where dependency truth
+              lives. Ripple never traverses every release when the question is
+              about one exact version.
+            </p>
+          </div>
+          <DependencyRippleVisual />
+        </div>
+      </section>
+
       {/* Search ---------------------------------------------------------- */}
       <section className="border-b border-[var(--hairline)] bg-ink-950" id="package-search">
         <div className="mx-auto grid w-full max-w-7xl gap-12 px-5 py-20 sm:px-8 sm:py-24 lg:grid-cols-[0.72fr_1.28fr] lg:items-start lg:gap-20 lg:px-12">
@@ -201,7 +279,7 @@ export default function HomePage() {
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-5 py-8 text-sm text-mist-600 sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-12">
           <p className="font-semibold text-mist-300">Ripple</p>
           <p className="font-mono text-xs">
-            dependency answers for exact npm releases
+            Exact-version npm dependency impact tracer
           </p>
         </div>
       </footer>
