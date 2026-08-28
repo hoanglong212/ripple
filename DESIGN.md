@@ -31,8 +31,8 @@ surface—not as rows in a generic database viewer.
 - Hairline borders structure the interface; large radii and floating card
   collections are avoided.
 - Landing sections alternate narrative and evidence, while package analysis
-  sections follow the reading order: identity, guide, dependency truth, impact,
-  explain path, dataset scope.
+  sections follow the reading order: identity and version selector, release
+  summary, dependencies, impact, explain path, dataset scope.
 - Asymmetric desktop grids collapse to one linear flow on mobile.
 - Diagrams and worked examples come before dense result lists.
 
@@ -50,19 +50,21 @@ The AJV comparison marks the dependency value that changed in amber and keeps
 unchanged or version-specific values quieter. It is visual evidence that a
 package name cannot supply version-level truth.
 
-### How to read this page
+### Data-first package summary
 
-The package page explicitly explains the direction of all three analyses:
+The selected exact release and its key counts appear before analysis results.
+Short direction labels stay beside the data instead of occupying a separate
+teaching block:
 
 - source → dependency;
 - affected version → source;
 - source → intermediate releases → target.
 
-### Worked edge
+### Contextual edge reading
 
-The first real direct dependency is expanded into source release, declared
-requirement, and resolved exact target, followed by one plain-English reading
-of the edge. The full result list follows beneath it.
+Dependency rows and explained paths keep the source release, declared
+requirement, and resolved exact target together. Plain-English guidance appears
+only where it helps interpret the adjacent result.
 
 ### Dataset trust
 

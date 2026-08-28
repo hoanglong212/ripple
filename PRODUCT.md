@@ -30,7 +30,7 @@ The primary recruiter journey should be understandable within 30 seconds: see th
 - Explain Path shows why two exact indexed versions are connected.
 - The dataset is a bounded npm snapshot: 426 packages, 449 versions, and 636 dependency relationships.
 - Existing APIs, graph queries, database logic, data model, and architecture must remain unchanged.
-- No package descriptions or external product data are available or required.
+- Public npm registry metadata supports package discovery and descriptions; it never supplies dependency edges, impact counts, or paths.
 
 ## Brand Commitments
 
