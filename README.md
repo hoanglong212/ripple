@@ -38,11 +38,39 @@ Switching releases in Ripple changes the downstream answer too: `ajv@8.20.0` is 
 from 9 indexed versions, `ajv@6.15.0` from 1. A package-level graph reports one number for
 both.
 
-## Why Package and Version are separate
+## Data model
 
 ```cypher
 (:Package)-[:HAS_VERSION]->(:Version)-[:DEPENDS_ON { requirement }]->(:Version)
 ```
+
+Two labelled node types and two typed relationships. The same AJV case from above, drawn as
+the graph actually stores it:
+
+```mermaid
+graph LR
+  P(["Package<br/>name: ajv"])
+  V6(["Version<br/>id: ajv@6.15.0"])
+  V8(["Version<br/>id: ajv@8.20.0"])
+  T4(["Version<br/>id: json-schema-traverse@0.4.1"])
+  T1(["Version<br/>id: json-schema-traverse@1.0.0"])
+
+  P -- HAS_VERSION --> V6
+  P -- HAS_VERSION --> V8
+  V6 -- "DEPENDS_ON<br/>requirement: ^0.4.1" --> T4
+  V8 -- "DEPENDS_ON<br/>requirement: ^1.0.0" --> T1
+```
+
+| Element | Properties | Purpose |
+| --- | --- | --- |
+| `(:Package)` | `name` (unique) | Identity and search. Carries no dependency data. |
+| `(:Version)` | `id` (unique, `name@version`), `version`, `packageName` | One exact published release. |
+| `[:HAS_VERSION]` | — | Ownership. Exactly one Package per Version. |
+| `[:DEPENDS_ON]` | `requirement` (non-empty) | One resolved dependency edge between two exact releases, carrying the semver range that was declared for it. |
+
+Both `ajv` releases hang off one `Package` node, but their `DEPENDS_ON` edges never touch it.
+That is the whole design: `Package` answers "what is this", `Version` answers "what does this
+depend on".
 
 `Package` is the identity and search layer. You type `ajv`, not `ajv@8.20.0`. It carries no
 dependency data.
@@ -53,6 +81,59 @@ values, so a result can never blend two releases.
 
 The graph holds **0** package-level dependency edges, and `npm run graph:verify` asserts
 that against the live database on every run.
+
+## Why a graph database?
+
+Every question Ripple answers is variable-length reachability over the same edge type. Not
+"join these two tables" but "walk `DEPENDS_ON` backwards from this release until you run out
+of edges or hit the depth bound, and tell me the shortest route to each release you found".
+
+In Cypher that is the whole query — shown here without the dataset-scoping filters that the
+real one in [`graph-repository.ts`](lib/repositories/graph-repository.ts) also carries:
+
+```cypher
+MATCH path = (affected:Version)-[:DEPENDS_ON*1..4]->(target:Version)
+WHERE target.id = $versionId
+WITH affected, path ORDER BY length(path)
+WITH affected, collect(path)[0] AS shortestPath
+RETURN affected.id, length(shortestPath) AS hopCount
+```
+
+The relational equivalent is a recursive CTE. This one is PostgreSQL — it leans on `ARRAY`
+and `DISTINCT ON`, and a portable version would be longer still:
+
+```sql
+WITH RECURSIVE reachable(affected_id, target_id, depth, visited) AS (
+  SELECT source_id, target_id, 1, ARRAY[source_id, target_id]
+    FROM depends_on WHERE target_id = $1
+  UNION ALL
+  SELECT d.source_id, r.target_id, r.depth + 1, r.visited || d.source_id
+    FROM depends_on d JOIN reachable r ON d.target_id = r.affected_id
+   WHERE r.depth < 4                       -- depth bound lives in the query text
+     AND NOT d.source_id = ANY(r.visited)  -- cycle guard written by hand
+)
+SELECT DISTINCT ON (affected_id) affected_id, depth
+  FROM reachable ORDER BY affected_id, depth;  -- shortest-per-target, also by hand
+```
+
+Three things the graph gives us that the CTE makes us build:
+
+1. **Cycle safety is the engine's job.** npm dependency graphs contain cycles. Cypher's
+   variable-length match will not revisit a relationship within a path; in SQL we carry a
+   `visited` array and filter against it on every recursion step.
+2. **Shortest-path-per-target is a primitive.** `shortestPath()` and `collect(path)[0]` after
+   an `ORDER BY length(path)` replace a `DISTINCT ON` over every path we generated.
+3. **The traversal reads like the question.** `-[:DEPENDS_ON*1..4]->` is the sentence "up to
+   four dependency hops". Explain Path is one `shortestPath()` call and returns the
+   relationships themselves, so the `requirement` on every hop comes back with the path
+   instead of needing a second pass to re-fetch the edges.
+
+**The honest limit of this argument.** At the current snapshot — 875 nodes and 1,085
+relationships — Postgres would serve these queries perfectly well, and the CTE above works.
+The case for a graph database here is the shape of the query and the fact that the model
+reads the way the domain does, not present-day performance. The gap widens with depth and
+breadth: each extra hop is one character in Cypher and another `JOIN` boundary plus a longer
+`visited` array in SQL.
 
 ## What it does
 
@@ -122,9 +203,9 @@ server-controlled, so a caller cannot request an unbounded expansion. A missing 
 or path means it was not found within Ripple's indexed data and traversal limit; it is not
 a claim about all of npm.
 
-## Graph model
+## Model invariants
 
-Core invariants:
+The [data model](#data-model) above is enforced, not just described:
 
 - `Package.name` is unique.
 - `Version.id` is unique and identifies one exact release.
@@ -134,6 +215,36 @@ Core invariants:
 - Exact-version questions never expand every Version belonging to a Package.
 
 The full rationale is documented in [docs/graph-model.md](docs/graph-model.md).
+
+## Query parameterisation
+
+Every value that originates outside the process — package names, version IDs, search terms,
+traversal targets, result limits — is passed as a driver parameter. No user input is ever
+concatenated into Cypher.
+
+There is exactly one interpolated value in the codebase, and it is the traversal depth:
+
+```ts
+// lib/repositories/graph-repository.ts
+-[dependencies:DEPENDS_ON*1..${maxDepth}]->(target)
+```
+
+**Cypher does not accept a parameter in a variable-length bound.** `*1..$maxDepth` is a
+syntax error; the bounds must be literals in the query text. The alternatives are writing one
+query per depth, or building the bound in the host language. Ripple does the latter, under
+three constraints:
+
+1. **The value is never user-supplied.** It comes from a private constant on the service —
+   `MAX_DOWNSTREAM_DEPTH = 4`, `MAX_EXPLAIN_PATH_DEPTH = 5`. No route handler, query string,
+   or request body can influence it, so a caller cannot request an unbounded expansion.
+2. **It is validated as an integer inside a fixed range before it reaches the template.**
+   `Number.isSafeInteger(maxDepth)` plus an explicit range check; anything else throws before
+   a query string exists.
+3. **It is the only interpolation.** Every other value in those same queries — `$versionId`,
+   `$datasetId`, `$sourceVersionId`, `$targetVersionId`, `$limit` — is a parameter.
+
+The result is that the query text is fully determined by two compile-time constants, and the
+only thing that varies per request travels as a parameter.
 
 ## Architecture
 
@@ -242,7 +353,24 @@ objects never cross the repository boundary.
 
 ## Setup
 
-Requirements: Node.js 20.9 or newer, npm, and access to a CognoDB instance.
+Requirements: Node.js 20.9 or newer, npm, and a CognoDB instance.
+
+### 1. Create the CognoDB instance
+
+1. Sign up at [console.cognodb.com](https://console.cognodb.com/signup). The free tier needs
+   no credit card.
+2. Create a free **c0** instance and pick a region. It provisions in under a minute. Each
+   workspace gets one free instance.
+3. Copy the connection details. The URI has the form
+   `bolt+s://<instance-id>.databases.cognodb.cloud`, the username is `cognodb`, and the
+   password is generated for you. **The password is shown exactly once** — copy or download
+   it before leaving the page.
+
+CognoDB speaks openCypher over Bolt and works with the official Neo4j drivers, so this
+project uses `neo4j-driver` unmodified. The free c0 instance (0.5 vCPU, 256 MB RAM, 1 GB
+disk) comfortably holds this snapshot — 875 nodes and 1,085 relationships.
+
+### 2. Install and configure
 
 ```bash
 npm install
@@ -260,7 +388,11 @@ COGNODB_USER=
 COGNODB_PASSWORD=
 ```
 
-Seed and verify the deterministic snapshot, then start Ripple:
+### 3. Seed the graph and run
+
+`graph:constraints` creates the uniqueness constraints, `graph:seed` loads the committed
+snapshot, and `graph:verify` asserts the model invariants against the live instance —
+including that the graph holds zero package-level dependency edges.
 
 ```bash
 npm run graph:constraints
